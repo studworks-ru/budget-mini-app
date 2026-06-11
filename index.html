@@ -3,64 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Бюджет — Подписка</title>
+<title>Бюджет</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  /* ----- СВЕТЛАЯ ТЕМА (по умолчанию) ----- */
   :root {
-    --bg: #F7F5F2;
-    --surface: #FFFFFF;
-    --surface2: #F2F0ED;
-    --border: #E8E4DF;
-    --green: #7DC4A0;
-    --green-light: #EAF5EE;
-    --green-dark: #5aaa82;
-    --pink: #E8A0B0;
-    --pink-light: #FDF0F3;
-    --purple: #B4A7D6;
-    --purple-light: #F3F0FA;
-    --peach: #E8C4A0;
-    --peach-light: #FDF5EE;
-    --text: #2D2D2D;
-    --muted: #9A9490;
-    --radius: 18px;
+    --bg: #F7F5F2; --surface: #FFFFFF; --surface2: #F2F0ED; --border: #E8E4DF;
+    --green: #7DC4A0; --green-light: #EAF5EE; --green-dark: #5aaa82;
+    --pink: #E8A0B0; --pink-light: #FDF0F3;
+    --purple: #B4A7D6; --purple-light: #F3F0FA; --peach: #E8C4A0; --peach-light: #FDF5EE;
+    --text: #2D2D2D; --muted: #9A9490; --radius: 18px;
     --shadow: 0 4px 16px rgba(0,0,0,0.05);
-    --toast-bg: #2D2D2D;
-    --toast-text: white;
+    --toast-bg: #2D2D2D; --toast-text: white;
   }
-
-  /* ----- ТЁМНАЯ ТЕМА (мужская) ----- */
   [data-theme="dark"] {
-    --bg: #0A0A0A;
-    --surface: #1C1C1E;
-    --surface2: #2C2C2E;
-    --border: #3A3A3C;
-    --green: #6BBF8E;
-    --green-light: #1E3A2A;
-    --green-dark: #4E9A6E;
-    --pink: #C87A8E;
-    --pink-light: #3A262C;
-    --purple: #9A8BC2;
-    --purple-light: #2A2538;
-    --peach: #C4A07A;
-    --peach-light: #3A3028;
-    --text: #ECECEC;
-    --muted: #8E8E93;
+    --bg: #0A0A0A; --surface: #1C1C1E; --surface2: #2C2C2E; --border: #3A3A3C;
+    --green: #6BBF8E; --green-light: #1E3A2A; --green-dark: #4E9A6E;
+    --pink: #C87A8E; --pink-light: #3A262C;
+    --purple: #9A8BC2; --purple-light: #2A2538;
+    --peach: #C4A07A; --peach-light: #3A3028;
+    --text: #ECECEC; --muted: #8E8E93;
     --shadow: 0 4px 16px rgba(0,0,0,0.3);
-    --toast-bg: #ECECEC;
-    --toast-text: #1C1C1E;
+    --toast-bg: #ECECEC; --toast-text: #1C1C1E;
   }
-
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { height: 100%; }
   body {
     font-family: 'Nunito', sans-serif;
     background: var(--bg);
@@ -72,19 +41,12 @@
     overflow: hidden;
     position: fixed;
     width: 100%;
-    top: 0;
-    left: 0;
-    transition: background 0.2s, color 0.2s;
+    top: 0; left: 0;
   }
-
-  /* Остальные стили — без изменений, но они будут использовать переменные */
   .header {
     padding: 12px 16px 8px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    background: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; background: var(--bg);
     padding-top: max(12px, env(safe-area-inset-top));
   }
   .header-month { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
@@ -101,9 +63,10 @@
 
   .scroll-area {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 0 14px;
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
@@ -118,7 +81,7 @@
   .sub-green { color: var(--green); } .sub-pink { color: var(--pink); }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .donut-card { background: var(--surface); border-radius: var(--radius); padding: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .donut-card { background: var(--surface); border-radius: var(--radius); padding: 14px; border: 1px solid var(--border); overflow: hidden; }
   .donut-card-title { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
   .donut-wrap { position: relative; height: 100px; display: flex; align-items: center; justify-content: center; }
   .donut-center { position: absolute; text-align: center; pointer-events: none; }
@@ -135,7 +98,7 @@
   .section-title { font-size: 15px; font-weight: 800; color: var(--text); }
   .btn-add { width: 28px; height: 28px; background: var(--green-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--green); cursor: pointer; font-weight: 700; }
 
-  .cat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px; box-shadow: var(--shadow); }
+  .cat-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px; }
   .cat-icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
   .cat-info { flex: 1; min-width: 0; }
   .cat-name { font-size: 13px; font-weight: 700; margin-bottom: 5px; }
@@ -145,7 +108,7 @@
   .cat-spent { font-size: 13px; font-weight: 700; color: var(--text); }
   .cat-limit { font-size: 10px; color: var(--muted); margin-top: 1px; }
 
-  .goal-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; margin-bottom: 8px; box-shadow: var(--shadow); }
+  .goal-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; cursor: pointer; margin-bottom: 8px; }
   .goal-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .goal-icon { font-size: 22px; }
   .goal-name { font-size: 13px; font-weight: 700; flex: 1; }
@@ -161,12 +124,8 @@
   .tx-info { flex: 1; min-width: 0; }
   .tx-name { font-size: 13px; font-weight: 600; }
   .tx-date { font-size: 10px; color: var(--muted); margin-top: 1px; }
-  .tx-amount { font-size: 13px; font-weight: 700; margin-right: 4px; }
+  .tx-amount { font-size: 13px; font-weight: 700; }
   .tx-income { color: var(--green); } .tx-expense { color: var(--pink); }
-  .tx-actions { display: flex; gap: 6px; align-items: center; }
-  .tx-edit, .tx-delete { color: var(--muted); font-size: 18px; cursor: pointer; transition: opacity 0.2s; }
-  .tx-edit:hover, .tx-delete:hover { opacity: 0.6; }
-  .tx-delete { color: var(--pink); }
 
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0;
@@ -195,7 +154,7 @@
     z-index: 99; font-weight: 700;
   }
 
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: flex-end; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; align-items: flex-end; }
   .modal-overlay.open { display: flex; }
   .modal {
     background: var(--surface); border-radius: 24px 24px 0 0;
@@ -203,12 +162,10 @@
     padding-bottom: max(20px, env(safe-area-inset-bottom));
     width: 100%; max-height: 88vh; overflow-y: auto;
     animation: slideUp 0.28s ease;
-    -webkit-overflow-scrolling: touch;
-    border-top: 1px solid var(--border);
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
-  .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 18px; color: var(--text); }
+  .modal-title { font-size: 17px; font-weight: 800; margin-bottom: 18px; }
 
   .form-group { margin-bottom: 13px; }
   .form-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; display: block; }
@@ -237,7 +194,7 @@
   .btn-primary { width: 100%; background: var(--green); border: none; border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 800; color: white; cursor: pointer; font-family: 'Nunito', sans-serif; margin-top: 4px; }
   .btn-danger { width: 100%; background: var(--pink-light); border: 1px solid var(--pink); border-radius: 14px; padding: 12px; font-size: 14px; font-weight: 700; color: var(--pink); cursor: pointer; font-family: 'Nunito', sans-serif; margin-top: 8px; }
 
-  .settings-item { display: flex; align-items: center; gap: 12px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; cursor: pointer; box-shadow: var(--shadow); }
+  .settings-item { display: flex; align-items: center; gap: 12px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; cursor: pointer; }
   .settings-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
   .settings-label { flex: 1; font-size: 13px; font-weight: 700; }
   .settings-arrow { color: var(--muted); font-size: 17px; }
@@ -291,16 +248,16 @@
       </div>
     </div>
     <div class="section"><div class="section-header"><div class="section-title">категории</div><div class="btn-add" onclick="openCatModal()">+</div></div><div id="categoryList"></div></div>
-    <div class="section"><div class="section-header"><div class="section-title">последние операции</div></div><div style="background:var(--surface);border-radius:14px;padding:4px 14px;border:1px solid var(--border); box-shadow: var(--shadow);"><div id="recentTx"></div></div></div>
+    <div class="section"><div class="section-header"><div class="section-title">последние операции</div></div><div style="background:var(--surface);border-radius:14px;padding:4px 14px;border:1px solid var(--border)"><div id="recentTx"></div></div></div>
   </div>
-  <div class="page" id="page-tx"><div class="section" style="margin-top:8px"><div class="section-header"><div class="section-title">все операции</div></div><div style="background:var(--surface);border-radius:14px;padding:4px 14px;border:1px solid var(--border); box-shadow: var(--shadow);"><div id="allTxList"></div></div></div></div>
+  <div class="page" id="page-tx"><div class="section" style="margin-top:8px"><div class="section-header"><div class="section-title">все операции</div></div><div style="background:var(--surface);border-radius:14px;padding:4px 14px;border:1px solid var(--border)"><div id="allTxList"></div></div></div></div>
   <div class="page" id="page-goals"><div class="section" style="margin-top:8px"><div class="section-header"><div class="section-title">финансовые цели</div><div class="btn-add" onclick="openGoalModal()">+</div></div><div id="goalsList"></div></div></div>
   <div class="page" id="page-settings"><div class="section" style="margin-top:8px">
     <div class="settings-item" onclick="openBudgetSettings()"><div class="settings-icon" style="background:var(--green-light)">💰</div><div class="settings-label">плановый бюджет</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="openCatModal()"><div class="settings-icon" style="background:var(--purple-light)">🏷️</div><div class="settings-label">управление категориями</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="exportExcel()"><div class="settings-icon" style="background:var(--green-light)">📊</div><div class="settings-label">экспорт в Excel (.xlsx)</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="exportPDF()"><div class="settings-icon" style="background:var(--peach-light)">📄</div><div class="settings-label">экспорт в PDF</div><div class="settings-arrow">›</div></div>
-    <div class="settings-item" onclick="clearMonth()"><div class="settings-icon" style="background:var(--pink-light)">🗑️</div><div class="settings-label">сбросить выбранный месяц</div><div class="settings-arrow">›</div></div>
+    <div class="settings-item" onclick="clearMonth()"><div class="settings-icon" style="background:var(--pink-light)">🗑️</div><div class="settings-label">сбросить текущий месяц</div><div class="settings-arrow">›</div></div>
   </div></div>
 </div>
 
@@ -315,52 +272,38 @@
 
 <!-- MODALS -->
 <div class="modal-overlay" id="monthModal" onclick="closeModal('monthModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">история по месяцам</div><div class="month-grid" id="monthGrid"></div></div></div>
-<div class="modal-overlay" id="txModal" onclick="closeModal('txModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="txModalTitle">новая операция</div><div class="type-toggle"><div class="type-btn active-expense" id="typeBtnExpense" onclick="setType('expense')">— расход</div><div class="type-btn" id="typeBtnIncome" onclick="setType('income')">+ доход</div></div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="txAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Описание</label><input class="form-input" id="txNote" type="text" placeholder="За что?"></div><div class="form-group"><label class="form-label">Дата операции</label><input class="form-input" id="txDate" type="date"></div><div class="form-group" id="catSelectGroup"><label class="form-label">Категория</label><div class="cat-select-grid" id="catSelectGrid"></div></div><button class="btn-primary" id="txSaveBtn" onclick="saveTx()">Сохранить</button></div></div>
+<div class="modal-overlay" id="txModal" onclick="closeModal('txModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">новая операция</div><div class="type-toggle"><div class="type-btn active-expense" id="typeBtnExpense" onclick="setType('expense')">— расход</div><div class="type-btn" id="typeBtnIncome" onclick="setType('income')">+ доход</div></div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="txAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Описание</label><input class="form-input" id="txNote" type="text" placeholder="За что?"></div><div class="form-group" id="catSelectGroup"><label class="form-label">Категория</label><div class="cat-select-grid" id="catSelectGrid"></div></div><button class="btn-primary" onclick="saveTx()">Сохранить</button></div></div>
 <div class="modal-overlay" id="catModal" onclick="closeModal('catModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="catModalTitle">новая категория</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="catName" type="text" placeholder="Продукты, транспорт..."></div><div class="form-group"><label class="form-label">Лимит в месяц (₽)</label><input class="form-input" id="catLimit" type="number" placeholder="необязательно"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="emojiGrid"></div></div><div class="form-group"><label class="form-label">Цвет</label><div class="color-grid" id="colorGrid"></div></div><button class="btn-primary" onclick="saveCat()">Сохранить</button><button class="btn-danger" id="deleteCatBtn" onclick="deleteCat()" style="display:none">Удалить категорию</button></div></div>
 <div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
 <div class="modal-overlay" id="budgetModal" onclick="closeModal('budgetModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">бюджет месяца</div><div class="form-group"><label class="form-label">Плановый доход (₽)</label><input class="form-input" id="budgetIncome" type="number" placeholder="60000"></div><button class="btn-primary" onclick="saveBudget()">Сохранить</button></div></div>
 
 <script>
-// === ТЁМНАЯ ТЕМА (автоматически) ===
+// TELEGRAM INIT
 const tg = window.Telegram?.WebApp;
+let userId = 'local';
 if (tg) {
   tg.ready();
   tg.expand();
   tg.disableVerticalSwipes && tg.disableVerticalSwipes();
-  // Устанавливаем тему в зависимости от colorScheme
-  if (tg.colorScheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else {
-    document.documentElement.setAttribute('data-theme', 'light');
+  if (tg.initDataUnsafe?.user) {
+    const u = tg.initDataUnsafe.user;
+    userId = String(u.id);
+    if (u.first_name) document.getElementById('userAvatar').textContent = u.first_name[0].toUpperCase();
   }
-  // Слушаем изменения темы в Telegram (если пользователь переключит)
-  tg.onEvent('themeChanged', () => {
-    if (tg.colorScheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.setAttribute('data-theme', 'light');
-    }
-    // Перерендерим графики, чтобы они перерисовались с новыми цветами
-    if (donutChart) donutChart.destroy();
-    if (barChart) barChart.destroy();
-    render();
-  });
 }
 
-let userId = 'local';
-if (tg && tg.initDataUnsafe?.user) {
-  const u = tg.initDataUnsafe.user;
-  userId = String(u.id);
-  if (u.first_name) document.getElementById('userAvatar').textContent = u.first_name[0].toUpperCase();
-}
+// Фикс скролла для Telegram
+document.getElementById('scrollArea').addEventListener('touchstart', function(e) {
+  this._startY = e.touches[0].clientY;
+}, {passive: true});
+document.getElementById('scrollArea').addEventListener('touchmove', function(e) {
+  const dy = e.touches[0].clientY - this._startY;
+  if ((this.scrollTop === 0 && dy > 0) || (this.scrollTop + this.clientHeight >= this.scrollHeight && dy < 0)) {
+    e.preventDefault();
+  }
+}, {passive: false});
 
-// ОСТАЛЬНОЙ КОД (функции сохранения, рендеринга и т.д.) — тот же, что и в предыдущей версии
-// Я привожу его сюда полностью, но чтобы не раздувать, оставлю как было (с исправлениями).
-
-// Так как код длинный, я вставлю его без изменений (логика та же, что в прошлом ответе с редактированием).
-// Здесь будет весь функционал бюджета с редактированием, датой и т.д.
-
-const STORE_KEY = `budget_v4_${userId}`;
+const STORE_KEY = `budget_v3_${userId}`;
 let state = loadState(), donutChart = null, barChart = null;
 let activeYear = new Date().getFullYear(), activeMonth = new Date().getMonth();
 
@@ -455,107 +398,25 @@ function renderBar() {
   barChart=new Chart(ctx,{type:'bar',data:{labels:months,datasets:[{label:'доходы',data:incomes,backgroundColor:'rgba(125,196,160,0.7)',borderRadius:4,borderSkipped:false},{label:'расходы',data:expenses,backgroundColor:'rgba(232,160,176,0.7)',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{grid:{display:false},ticks:{font:{size:9,family:'Nunito'},color:'#9A9490'}},y:{display:false,grid:{display:false}}},animation:{duration:500}}});
 }
 
-function renderCategories(txM){const list=document.getElementById('categoryList');if(!state.categories.length){list.innerHTML=`<div class="empty-state"><div class="ei">🏷️</div><p>Нет категорий</p></div>`;return;}list.innerHTML=state.categories.map(cat=>{const spent=txM.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);const limit=cat.limit||0;const pct=limit?Math.min(100,Math.round(spent/limit*100)):0;const over=limit&&spent>limit;const barColor=over?'#E8A0B0':'#'+cat.color;return`<div class="cat-item" onclick="editCat('${cat.id}')"><div class="cat-icon" style="background:#${cat.color}22">${cat.icon}</div><div class="cat-info"><div class="cat-name">${escapeHtml(cat.name)}</div><div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div><div class="cat-right"><div class="cat-spent">${fmt(spent)}</div><div class="cat-limit">${limit?'из '+fmt(limit):'без лимита'}</div></div></div>`;}).join('');}
+function renderCategories(txM){const list=document.getElementById('categoryList');if(!state.categories.length){list.innerHTML=`<div class="empty-state"><div class="ei">🏷️</div><p>Нет категорий</p></div>`;return;}list.innerHTML=state.categories.map(cat=>{const spent=txM.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);const limit=cat.limit||0;const pct=limit?Math.min(100,Math.round(spent/limit*100)):0;const over=limit&&spent>limit;const barColor=over?'#E8A0B0':'#'+cat.color;return`<div class="cat-item" onclick="editCat('${cat.id}')"><div class="cat-icon" style="background:#${cat.color}22">${cat.icon}</div><div class="cat-info"><div class="cat-name">${cat.name}</div><div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div><div class="cat-right"><div class="cat-spent">${fmt(spent)}</div><div class="cat-limit">${limit?'из '+fmt(limit):'без лимита'}</div></div></div>`;}).join('');}
 
-function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-
-function txHtml(t) {
-  const cat = state.categories.find(c => c.id === t.catId);
-  const icon = cat ? cat.icon : (t.type === 'income' ? '💰' : '💸');
-  const bg = cat ? `#${cat.color}22` : '#F2F0ED';
-  const cls = t.type === 'income' ? 'tx-income' : 'tx-expense';
-  const sign = t.type === 'income' ? '+' : '−';
-  const categoryName = cat ? cat.name : (t.type === 'income' ? 'Доход' : 'Без категории');
-  const displayName = t.note || categoryName;
-  return `
-    <div class="tx-item" data-id="${t.id}">
-      <div class="tx-icon" style="background:${bg}">${icon}</div>
-      <div class="tx-info">
-        <div class="tx-name">${escapeHtml(displayName)}</div>
-        <div class="tx-date">${fmtDate(t.date)}</div>
-      </div>
-      <div class="tx-amount ${cls}">${sign}${fmt(t.amount)}</div>
-      <div class="tx-actions">
-        <div class="tx-edit" onclick="event.stopPropagation(); openEditTx('${t.id}')">✏️</div>
-        <div class="tx-delete" onclick="event.stopPropagation(); deleteTx('${t.id}')">🗑️</div>
-      </div>
-    </div>`;
-}
-
+function txHtml(t){const cat=state.categories.find(c=>c.id===t.catId);const icon=cat?cat.icon:(t.type==='income'?'💰':'💸');const bg=cat?`#${cat.color}22`:'#F2F0ED';const cls=t.type==='income'?'tx-income':'tx-expense';const sign=t.type==='income'?'+':'−';return`<div class="tx-item"><div class="tx-icon" style="background:${bg}">${icon}</div><div class="tx-info"><div class="tx-name">${t.note||(cat?cat.name:'Операция')}</div><div class="tx-date">${fmtDate(t.date)}</div></div><div class="tx-amount ${cls}">${sign}${fmt(t.amount)}</div></div>`;}
 function renderRecentTx(){const el=document.getElementById('recentTx');const recent=[...state.transactions].reverse().slice(0,5);el.innerHTML=recent.length?recent.map(txHtml).join(''):`<div class="empty-state"><div class="ei">💸</div><p>Операций пока нет</p></div>`;}
 function renderAllTx(){const el=document.getElementById('allTxList');const all=[...state.transactions].reverse();el.innerHTML=all.length?all.map(txHtml).join(''):`<div class="empty-state"><div class="ei">📋</div><p>Операций пока нет</p></div>`;}
-function renderGoals(){const el=document.getElementById('goalsList');if(!state.goals.length){el.innerHTML=`<div class="empty-state"><div class="ei">🎯</div><p>Целей пока нет.<br>Нажми + чтобы добавить</p></div>`;return;}el.innerHTML=state.goals.map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;return`<div class="goal-item" onclick="editGoal('${g.id}')"><div class="goal-header"><div class="goal-icon">${g.icon}</div><div class="goal-name">${escapeHtml(g.name)}</div><div class="goal-pct">${pct}%</div></div><div class="goal-bar"><div class="goal-bar-fill" style="width:${pct}%"></div></div><div class="goal-amounts"><span>накоплено: <strong>${fmt(g.saved)}</strong></span><span>цель: <strong>${fmt(g.target)}</strong></span></div></div>`;}).join('');}
+function renderGoals(){const el=document.getElementById('goalsList');if(!state.goals.length){el.innerHTML=`<div class="empty-state"><div class="ei">🎯</div><p>Целей пока нет.<br>Нажми + чтобы добавить</p></div>`;return;}el.innerHTML=state.goals.map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;return`<div class="goal-item" onclick="editGoal('${g.id}')"><div class="goal-header"><div class="goal-icon">${g.icon}</div><div class="goal-name">${g.name}</div><div class="goal-pct">${pct}%</div></div><div class="goal-bar"><div class="goal-bar-fill" style="width:${pct}%"></div></div><div class="goal-amounts"><span>накоплено: <strong>${fmt(g.saved)}</strong></span><span>цель: <strong>${fmt(g.target)}</strong></span></div></div>`;}).join('');}
 
 function switchPage(name,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(`page-${name}`).classList.add('active');el.classList.add('active');document.getElementById('scrollArea').scrollTop=0;document.getElementById('fab').style.display=name==='settings'?'none':'flex';document.getElementById('fab').onclick=name==='goals'?()=>openGoalModal():()=>openTxModal();}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
 
-let editingTxId = null;
-function resetTxForm() {
-  editingTxId = null;
-  document.getElementById('txModalTitle').innerText = 'новая операция';
-  document.getElementById('txSaveBtn').innerText = 'Сохранить';
-  document.getElementById('txAmount').value = '';
-  document.getElementById('txNote').value = '';
-  const today = new Date().toISOString().slice(0,10);
-  document.getElementById('txDate').value = today;
-  currentType = 'expense';
-  selectedCatId = null;
-  updateTypeUI();
-  renderCatSelect();
-}
-function openTxModal() { resetTxForm(); openModal('txModal'); setTimeout(()=>document.getElementById('txAmount').focus(),300); }
-function openEditTx(id) {
-  const tx = state.transactions.find(t => t.id === id);
-  if (!tx) return;
-  editingTxId = id;
-  document.getElementById('txModalTitle').innerText = 'редактировать операцию';
-  document.getElementById('txSaveBtn').innerText = 'Обновить';
-  document.getElementById('txAmount').value = tx.amount;
-  document.getElementById('txNote').value = tx.note || '';
-  const dateObj = new Date(tx.date);
-  const yyyy = dateObj.getFullYear();
-  const mm = String(dateObj.getMonth()+1).padStart(2,'0');
-  const dd = String(dateObj.getDate()).padStart(2,'0');
-  document.getElementById('txDate').value = `${yyyy}-${mm}-${dd}`;
-  currentType = tx.type;
-  selectedCatId = tx.catId || null;
-  updateTypeUI();
-  renderCatSelect();
-  openModal('txModal');
-  setTimeout(()=>document.getElementById('txAmount').focus(),300);
-}
-function saveTx() {
-  const amount = parseFloat(document.getElementById('txAmount').value);
-  const note = document.getElementById('txNote').value.trim();
-  const dateStr = document.getElementById('txDate').value;
-  if (!amount || amount <= 0) { showToast('⚠️ Введи сумму'); return; }
-  if (currentType === 'expense' && !selectedCatId) { showToast('⚠️ Выберите категорию расхода'); return; }
-  if (!dateStr) { showToast('⚠️ Укажите дату'); return; }
-  const isoDate = new Date(dateStr + 'T00:00:00').toISOString();
-  if (editingTxId) {
-    const index = state.transactions.findIndex(t => t.id === editingTxId);
-    if (index !== -1) {
-      state.transactions[index] = { ...state.transactions[index], amount, note, type: currentType, catId: selectedCatId, date: isoDate };
-    }
-    editingTxId = null;
-    showToast('✏️ Операция обновлена');
-  } else {
-    state.transactions.push({ id: uid(), type: currentType, amount, note, catId: selectedCatId, date: isoDate });
-    showToast('✅ Сохранено');
-  }
-  saveState();
-  closeModal('txModal');
-  render();
-}
-function deleteTx(id){ if(confirm('Удалить операцию?')){ state.transactions = state.transactions.filter(t=>t.id!==id); saveState(); render(); showToast('✅ Операция удалена'); } }
-
 const EMOJIS=['🛒','🚗','☕','🏠','💊','📱','🎭','👗','📚','✈️','🎮','🍕','💈','🔧','🎁','💡','🏋️','🐾','🏦','📦'];
 let currentType='expense',selectedCatId=null;
+function openTxModal(){currentType='expense';selectedCatId=null;document.getElementById('txAmount').value='';document.getElementById('txNote').value='';updateTypeUI();renderCatSelect();openModal('txModal');setTimeout(()=>document.getElementById('txAmount').focus(),300);}
 function setType(t){currentType=t;updateTypeUI();renderCatSelect();}
 function updateTypeUI(){document.getElementById('typeBtnExpense').className='type-btn'+(currentType==='expense'?' active-expense':'');document.getElementById('typeBtnIncome').className='type-btn'+(currentType==='income'?' active-income':'');document.getElementById('catSelectGroup').style.display=currentType==='expense'?'block':'none';}
-function renderCatSelect(){document.getElementById('catSelectGrid').innerHTML=state.categories.map(cat=>`<div class="cat-select-item ${selectedCatId===cat.id?'selected':''}" onclick="selectCat('${cat.id}')"><div class="ci">${cat.icon}</div><div>${escapeHtml(cat.name)}</div></div>`).join('');}
+function renderCatSelect(){document.getElementById('catSelectGrid').innerHTML=state.categories.map(cat=>`<div class="cat-select-item ${selectedCatId===cat.id?'selected':''}" onclick="selectCat('${cat.id}')"><div class="ci">${cat.icon}</div><div>${cat.name}</div></div>`).join('');}
 function selectCat(id){selectedCatId=selectedCatId===id?null:id;renderCatSelect();}
+function saveTx(){const amount=parseFloat(document.getElementById('txAmount').value);const note=document.getElementById('txNote').value.trim();if(!amount||amount<=0){showToast('⚠️ Введи сумму');return;}state.transactions.push({id:uid(),type:currentType,amount,note,catId:selectedCatId,date:nowISO()});saveState();closeModal('txModal');render();showToast('✅ Сохранено');}
 
 let editingCatId=null,selectedEmoji='📦',selectedColor='C4C0BA';
 const COLORS=['7DC4A0','E8A0B0','B4A7D6','A7C4D6','E8C4A0','C4C0BA','8EC6E0','D4A0C8'];
@@ -566,7 +427,7 @@ function renderColorGrid(gid,sel){document.getElementById(gid).innerHTML=COLORS.
 function selectEmoji(gid,e){selectedEmoji=e;renderEmojiGrid(gid,e);}
 function selectColor(gid,c){selectedColor=c;renderColorGrid(gid,c);}
 function saveCat(){const name=document.getElementById('catName').value.trim();const limit=parseFloat(document.getElementById('catLimit').value)||0;if(!name){showToast('⚠️ Введи название');return;}if(editingCatId){const cat=state.categories.find(c=>c.id===editingCatId);Object.assign(cat,{name,limit,icon:selectedEmoji,color:selectedColor});}else{state.categories.push({id:uid(),name,icon:selectedEmoji,color:selectedColor,limit});}saveState();closeModal('catModal');render();showToast('✅ Категория сохранена');}
-function deleteCat(){if(!editingCatId) return; state.transactions.forEach(t => { if(t.catId === editingCatId) t.catId = null; }); state.categories = state.categories.filter(c => c.id !== editingCatId); saveState(); closeModal('catModal'); render(); showToast('🗑️ Категория удалена, операции помечены как без категории');}
+function deleteCat(){state.categories=state.categories.filter(c=>c.id!==editingCatId);saveState();closeModal('catModal');render();showToast('🗑️ Удалена');}
 
 let editingGoalId=null,selectedGoalEmoji='🎯';
 function openGoalModal(id){editingGoalId=id||null;selectedGoalEmoji='🎯';if(id){const g=state.goals.find(x=>x.id===id);document.getElementById('goalModalTitle').textContent='редактировать цель';document.getElementById('goalName').value=g.name;document.getElementById('goalTarget').value=g.target;document.getElementById('goalSaved').value=g.saved;selectedGoalEmoji=g.icon;document.getElementById('deleteGoalBtn').style.display='block';}else{document.getElementById('goalModalTitle').textContent='новая цель';document.getElementById('goalName').value='';document.getElementById('goalTarget').value='';document.getElementById('goalSaved').value='';document.getElementById('deleteGoalBtn').style.display='none';}renderEmojiGrid('goalEmojiGrid',selectedGoalEmoji);setTimeout(()=>{document.querySelectorAll('#goalEmojiGrid .emoji-btn').forEach(btn=>{btn.onclick=()=>{selectedGoalEmoji=btn.textContent;document.querySelectorAll('#goalEmojiGrid .emoji-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');};});},50);openModal('goalModal');}
@@ -576,9 +437,10 @@ function deleteGoal(){state.goals=state.goals.filter(g=>g.id!==editingGoalId);sa
 
 function openBudgetSettings(){document.getElementById('budgetIncome').value=state.budget?.income||'';openModal('budgetModal');}
 function saveBudget(){state.budget={income:parseFloat(document.getElementById('budgetIncome').value)||0};saveState();closeModal('budgetModal');render();showToast('✅ Обновлено');}
-function clearMonth(){ if(confirm('Удалить операции за выбранный месяц?')){ state.transactions = state.transactions.filter(t => !isActiveMonth(t.date)); saveState(); render(); showToast('🗑️ Месяц очищен'); } }
-function exportExcel(){const wb=XLSX.utils.book_new();const txRows=[['Дата','Тип','Категория','Описание','Сумма (₽)']];[...state.transactions].reverse().forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);txRows.push([new Date(t.date).toLocaleDateString('ru-RU'),t.type==='income'?'Доход':'Расход',cat?cat.name:'Без категории',t.note||'',t.amount]);});const ws1=XLSX.utils.aoa_to_sheet(txRows);XLSX.utils.book_append_sheet(wb,ws1,'Операции');XLSX.writeFile(wb,`бюджет_${new Date().toLocaleDateString('ru-RU').replace(/\./g,'-')}.xlsx`);showToast('📊 Excel скачан');}
-function exportPDF(){ const printWindow = window.open('', '_blank'); printWindow.document.write(`<html><head><title>Бюджет</title><style>body { font-family: sans-serif; } table { border-collapse: collapse; width: 100%; } td,th { border:1px solid #ccc; padding:8px; text-align:left; }</style></head><body><h1>Отчёт по бюджету</h1><p>Дата: ${new Date().toLocaleDateString('ru-RU')}</p><table><thead><tr><th>Дата</th><th>Тип</th><th>Категория</th><th>Описание</th><th>Сумма (₽)</th></tr></thead><tbody>${state.transactions.slice().reverse().map(t => { const cat = state.categories.find(c=>c.id===t.catId); return `<tr><td>${new Date(t.date).toLocaleDateString('ru-RU')}</td><td>${t.type==='income'?'Доход':'Расход'}</td><td>${cat?escapeHtml(cat.name):'Без категории'}</td><td>${escapeHtml(t.note||'')}</td><td>${t.amount}</td></tr>`; }).join('')}</tbody></table></body></html>`); printWindow.document.close(); printWindow.print(); showToast('📄 Открыто окно печати'); }
+function clearMonth(){if(confirm('Удалить операции за текущий месяц?')){state.transactions=state.transactions.filter(t=>!isCurrentMonth(t.date));saveState();render();showToast('🗑️ Месяц очищен');}}
+
+function exportExcel(){const wb=XLSX.utils.book_new();const txRows=[['Дата','Тип','Категория','Описание','Сумма (₽)']];[...state.transactions].reverse().forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);txRows.push([new Date(t.date).toLocaleDateString('ru-RU'),t.type==='income'?'Доход':'Расход',cat?cat.name:'—',t.note||'',t.amount]);});const ws1=XLSX.utils.aoa_to_sheet(txRows);XLSX.utils.book_append_sheet(wb,ws1,'Операции');XLSX.writeFile(wb,`бюджет_${new Date().toLocaleDateString('ru-RU').replace(/\./g,'-')}.xlsx`);showToast('📊 Excel скачан');}
+function exportPDF(){showToast('📄 Функция в разработке');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
 
 render();
