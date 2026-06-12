@@ -182,7 +182,7 @@
     <div class="settings-item" onclick="openBudgetSettings()"><div class="settings-icon" style="background:var(--green-light)">💰</div><div class="settings-label">плановый бюджет</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="openCatModal()"><div class="settings-icon" style="background:var(--purple-light)">🏷️</div><div class="settings-label">управление категориями</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="exportExcel()"><div class="settings-icon" style="background:var(--green-light)">📊</div><div class="settings-label">экспорт в Excel (.xlsx)</div><div class="settings-arrow">›</div></div>
-    <div class="settings-item" onclick="exportPDF()"><div class="settings-icon" style="background:var(--peach-light)">📄</div><div class="settings-label">экспорт в PDF</div><div class="settings-arrow">›</div></div>
+    <div class="settings-item" onclick="exportPDF()"><div class="settings-icon" style="background:var(--peach-light)">📄</div><div class="settings-label">отчёт / PDF</div><div class="settings-arrow">›</div></div>
     <div class="settings-item" onclick="clearMonth()"><div class="settings-icon" style="background:var(--pink-light)">🗑️</div><div class="settings-label">сбросить текущий месяц</div><div class="settings-arrow">›</div></div>
   </div></div>
 </div>
@@ -210,6 +210,20 @@
 <div class="modal-overlay" id="catModal" onclick="closeModal('catModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="catModalTitle">новая категория</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="catName" type="text" placeholder="Продукты, транспорт..."></div><div class="form-group"><label class="form-label">Лимит в месяц (₽)</label><input class="form-input" id="catLimit" type="number" placeholder="необязательно"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="emojiGrid"></div></div><div class="form-group"><label class="form-label">Цвет</label><div class="color-grid" id="colorGrid"></div></div><button class="btn-primary" onclick="saveCat()">Сохранить</button><button class="btn-danger" id="deleteCatBtn" onclick="deleteCat()" style="display:none">Удалить категорию</button></div></div>
 <div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
 <div class="modal-overlay" id="budgetModal" onclick="closeModal('budgetModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">бюджет месяца</div><div class="form-group"><label class="form-label">Плановый доход (₽)</label><input class="form-input" id="budgetIncome" type="number" placeholder="60000"></div><button class="btn-primary" onclick="saveBudget()">Сохранить</button></div></div>
+
+<div class="modal-overlay" id="reportModal" onclick="closeModal('reportModal')">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:92vh">
+    <div class="modal-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">📊 Отчёт</div>
+      <button onclick="copyReport()" style="background:var(--green);border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:Nunito,sans-serif">📋 Скопировать</button>
+    </div>
+    <div id="reportContent" style="font-size:13px;line-height:1.7;color:var(--text)"></div>
+    <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--muted);text-align:center">
+      С ноута: скопируй → вставь в Word/Google Docs → сохрани как PDF
+    </div>
+  </div>
+</div>
 <script>
 const tg=window.Telegram?.WebApp;
 let userId='local';
@@ -279,11 +293,63 @@ function exportExcel(){try{const wb=XLSX.utils.book_new();const txRows=[['Дат
   a.download=fname;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   showToast('📊 Excel скачан');}catch(e){showToast('❌ Ошибка: '+e.message);}}
-function exportPDF(){const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});const rows=all.map(t=>{const cat=state.categories.find(c=>c.id===t.catId);const sign=t.type==='income'?'+':'−';const color=t.type==='income'?'#5aaa82':'#C87080';return`<tr><td>${fmtDate(t.date)}</td><td>${cat?cat.icon+' '+cat.name:'—'}</td><td>${t.note||'—'}</td><td style="color:${color};font-weight:700;text-align:right">${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽</td></tr>`;}).join('');const catS=state.categories.map(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);if(!spent)return'';return`<tr><td>${cat.icon} ${cat.name}</td><td style="text-align:right">${Number(spent).toLocaleString('ru-RU')} ₽</td><td style="text-align:right">${cat.limit?Number(cat.limit).toLocaleString('ru-RU')+' ₽':'—'}</td></tr>`;}).join('');const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Бюджет — отчёт</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#222;font-size:13px}h1{font-size:20px;margin-bottom:4px}.sub{color:#888;margin-bottom:20px}.summary{display:flex;gap:24px;margin-bottom:24px}.sum-box{background:#f5f5f5;border-radius:10px;padding:12px 18px}.sum-label{font-size:11px;color:#888;margin-bottom:4px}.sum-val{font-size:18px;font-weight:700}.green{color:#5aaa82}.pink{color:#C87080}table{width:100%;border-collapse:collapse;margin-bottom:24px}th{background:#f0f0f0;padding:8px 10px;text-align:left;font-size:11px;color:#555}td{padding:7px 10px;border-bottom:1px solid #eee;font-size:12px}h2{font-size:15px;margin:20px 0 10px}@media print{.no-print{display:none}}</style></head><body><div class="no-print" style="background:#e8f5ee;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;color:#2d6a4f">📄 Нажми <b>Ctrl+P</b> (или меню → Печать) и выбери <b>Сохранить как PDF</b></div><h1>📊 Отчёт по бюджету</h1><div class="sub">Сформирован: ${dateStr}</div><div class="summary"><div class="sum-box"><div class="sum-label">Доходы</div><div class="sum-val green">+${Number(income).toLocaleString('ru-RU')} ₽</div></div><div class="sum-box"><div class="sum-label">Расходы</div><div class="sum-val pink">−${Number(expense).toLocaleString('ru-RU')} ₽</div></div><div class="sum-box"><div class="sum-label">Остаток</div><div class="sum-val ${income-expense>=0?'green':'pink'}">${income-expense>=0?'+':'−'}${Math.abs(income-expense).toLocaleString('ru-RU')} ₽</div></div></div><h2>Все операции</h2><table><thead><tr><th>Дата</th><th>Категория</th><th>Описание</th><th style="text-align:right">Сумма</th></tr></thead><tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:#aaa">нет операций</td></tr>'}</tbody></table><h2>По категориям</h2><table><thead><tr><th>Категория</th><th style="text-align:right">Потрачено</th><th style="text-align:right">Лимит</th></tr></thead><tbody>${catS||'<tr><td colspan="3" style="text-align:center;color:#aaa">нет данных</td></tr>'}</tbody></table></body></html>`;
-  const b64=btoa(unescape(encodeURIComponent(html)));
-  const dataUrl='data:text/html;base64,'+b64;
-  if(tg&&tg.openLink){tg.openLink(dataUrl);}else{const a=document.createElement('a');a.href=dataUrl;a.download=`отчёт_${new Date().toISOString().slice(0,10)}.html`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
-  showToast('📄 Отчёт готов — открой и сохрани как PDF');}
+function exportPDF(){
+  const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));
+  const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const balance=income-expense;
+  const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+
+  // Итоги
+  let html=`<div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">📅 ${dateStr}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div><div style="font-size:10px;color:var(--muted)">Доходы</div><div style="font-size:15px;font-weight:800;color:var(--green)">+${Number(income).toLocaleString('ru-RU')} ₽</div></div>
+      <div><div style="font-size:10px;color:var(--muted)">Расходы</div><div style="font-size:15px;font-weight:800;color:var(--pink)">−${Number(expense).toLocaleString('ru-RU')} ₽</div></div>
+      <div><div style="font-size:10px;color:var(--muted)">Остаток</div><div style="font-size:15px;font-weight:800;color:${balance>=0?'var(--green)':'var(--pink)'}">${balance>=0?'+':'−'}${Math.abs(balance).toLocaleString('ru-RU')} ₽</div></div>
+    </div>
+  </div>`;
+
+  // По категориям
+  const catRows=state.categories.map(cat=>{
+    const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);
+    if(!spent)return'';
+    const pct=expense?Math.round(spent/expense*100):0;
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>${cat.icon} ${cat.name}</span><span style="font-weight:700">${Number(spent).toLocaleString('ru-RU')} ₽ <span style="color:var(--muted);font-size:11px">${pct}%</span></span></div>`;
+  }).join('');
+  if(catRows){html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 6px">ПО КАТЕГОРИЯМ</div><div style="background:var(--surface2);border-radius:14px;padding:10px 14px;margin-bottom:14px">${catRows}</div>`;}
+
+  // Операции
+  const txRows=all.map(t=>{
+    const cat=state.categories.find(c=>c.id===t.catId);
+    const sign=t.type==='income'?'+':'−';
+    const color=t.type==='income'?'var(--green)':'var(--pink)';
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${t.note||(cat?cat.name:'Операция')}</div><div style="font-size:10px;color:var(--muted)">${fmtDate(t.date)}${cat?' · '+cat.icon+cat.name:''}</div></div><div style="font-weight:700;color:${color};white-space:nowrap">${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽</div></div>`;
+  }).join('');
+  html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 6px">ВСЕ ОПЕРАЦИИ</div><div style="background:var(--surface2);border-radius:14px;padding:10px 14px">${txRows||'<div style="color:var(--muted);text-align:center;padding:12px">нет операций</div>'}</div>`;
+
+  document.getElementById('reportContent').innerHTML=html;
+  openModal('reportModal');
+}
+
+function copyReport(){
+  const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));
+  const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+  let text=`📊 Отчёт по бюджету\n${dateStr}\n\n`;
+  text+=`💳 Доходы:  +${Number(income).toLocaleString('ru-RU')} ₽\n`;
+  text+=`🛍 Расходы: −${Number(expense).toLocaleString('ru-RU')} ₽\n`;
+  text+=`📊 Остаток: ${income-expense>=0?'+':'−'}${Math.abs(income-expense).toLocaleString('ru-RU')} ₽\n\n`;
+  text+=`── По категориям ──\n`;
+  state.categories.forEach(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);if(spent)text+=`${cat.icon} ${cat.name}: ${Number(spent).toLocaleString('ru-RU')} ₽\n`;});
+  text+=`\n── Операции ──\n`;
+  all.forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);const sign=t.type==='income'?'+':'−';text+=`${fmtDate(t.date)} ${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽ ${t.note||(cat?cat.name:'')}\n`;});
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 Скопировано!')).catch(()=>{
+    // fallback для Telegram
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('📋 Скопировано!');}catch(e){showToast('⚠️ Не удалось скопировать');}document.body.removeChild(ta);
+  });
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 render();
 </script>
