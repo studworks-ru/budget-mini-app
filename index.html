@@ -152,6 +152,30 @@
   .sync-indicator { position: fixed; top: max(12px, env(safe-area-inset-top)); right: 60px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); z-index: 150; opacity: 0; transition: opacity 0.3s; }
   .sync-indicator.syncing { opacity: 1; animation: pulse 1s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* PAYWALL */
+  .paywall { display: none; position: fixed; inset: 0; z-index: 5000; background: linear-gradient(160deg, #0f1f17 0%, #1a1a2e 100%); flex-direction: column; align-items: center; justify-content: flex-start; overflow-y: auto; padding: 0 20px 40px; padding-top: max(50px, env(safe-area-inset-top)); }
+  .paywall.show { display: flex; }
+  .paywall-badge { background: linear-gradient(90deg, #7DC4A0, #B4A7D6); border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 800; color: white; margin-bottom: 20px; letter-spacing: 0.5px; }
+  .paywall-icon { font-size: 56px; margin-bottom: 12px; }
+  .paywall-title { font-size: 26px; font-weight: 800; color: white; text-align: center; margin-bottom: 8px; line-height: 1.2; }
+  .paywall-sub { font-size: 14px; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 28px; line-height: 1.5; }
+  .paywall-features { width: 100%; margin-bottom: 28px; }
+  .paywall-feature { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .paywall-feature:last-child { border-bottom: none; }
+  .paywall-feature-icon { font-size: 20px; flex-shrink: 0; }
+  .paywall-plans { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .plan-card { background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; }
+  .plan-card:active { transform: scale(0.98); }
+  .plan-card.popular { background: rgba(125,196,160,0.15); border-color: #7DC4A0; }
+  .plan-card-left { display: flex; flex-direction: column; gap: 2px; }
+  .plan-name { font-size: 15px; font-weight: 800; color: white; }
+  .plan-economy { font-size: 11px; color: #7DC4A0; font-weight: 600; }
+  .plan-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .plan-price { font-size: 18px; font-weight: 800; color: white; }
+  .plan-per { font-size: 11px; color: rgba(255,255,255,0.5); }
+  .popular-badge { background: #7DC4A0; color: white; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; text-align: center; }
+  .paywall-trial { font-size: 12px; color: rgba(255,255,255,0.4); text-align: center; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -238,6 +262,65 @@
   </div>
 </div>
 
+<!-- PAYWALL -->
+<div class="paywall" id="paywall">
+  <div class="paywall-badge">✦ БЮДЖЕТ ЧУДО ПРЕМИУМ</div>
+  <div class="paywall-icon">💸</div>
+  <div class="paywall-title">Знай куда уходят твои деньги</div>
+  <div class="paywall-sub">Твой пробный период закончился.<br>Продолжи — и больше никаких сюрпризов к концу месяца.</div>
+  <div class="paywall-features">
+    <div class="paywall-feature"><div class="paywall-feature-icon">📊</div>Полная история всех операций</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">🎯</div>Финансовые цели и накопления</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">📈</div>Аналитика и графики по месяцам</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">📋</div>Экспорт в Excel и отчёты</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">☁️</div>Данные сохраняются на всех устройствах</div>
+  </div>
+  <div class="paywall-plans">
+    <div class="plan-card" onclick="openPayment('month')">
+      <div class="plan-card-left">
+        <div class="plan-name">1 месяц</div>
+        <div class="plan-economy" style="color:rgba(255,255,255,0.4)">Попробуй</div>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price">249 ₽</div>
+        <div class="plan-per">в месяц</div>
+      </div>
+    </div>
+    <div class="plan-card popular" onclick="openPayment('3months')">
+      <div class="plan-card-left">
+        <div class="popular-badge">🔥 ВЫГОДНЕЕ</div>
+        <div class="plan-name">3 месяца</div>
+        <div class="plan-economy">Экономия 198 ₽</div>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price">549 ₽</div>
+        <div class="plan-per">183 ₽/мес</div>
+      </div>
+    </div>
+    <div class="plan-card" onclick="openPayment('6months')">
+      <div class="plan-card-left">
+        <div class="plan-name">6 месяцев</div>
+        <div class="plan-economy">Экономия 645 ₽</div>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price">849 ₽</div>
+        <div class="plan-per">142 ₽/мес</div>
+      </div>
+    </div>
+    <div class="plan-card" onclick="openPayment('year')">
+      <div class="plan-card-left">
+        <div class="plan-name">1 год</div>
+        <div class="plan-economy">Экономия 1 499 ₽</div>
+      </div>
+      <div class="plan-right">
+        <div class="plan-price">1 490 ₽</div>
+        <div class="plan-per">124 ₽/мес</div>
+      </div>
+    </div>
+  </div>
+  <div class="paywall-trial">Отменить подписку можно в любой момент.<br>Платёж обрабатывается через Lava.top.</div>
+</div>
+
 <script>
 // ── SUPABASE ──
 const SUPABASE_URL = 'https://dtlhdghpeakgxttvbgov.supabase.co';
@@ -283,8 +366,9 @@ function setSyncing(v){document.getElementById('syncIndicator').classList.toggle
 
 // ── SUPABASE INIT ──
 async function initUser() {
-  // Upsert пользователя
+  // Upsert пользователя и получаем его данные
   await sb.from('users').upsert({ id: userId, first_name: userFirstName }, { onConflict: 'id' });
+  const { data: userRow } = await sb.from('users').select('*').eq('id', userId).single();
 
   // Загружаем все данные параллельно
   const [cats, txs, goals, settings] = await Promise.all([
@@ -313,6 +397,9 @@ async function initUser() {
   // Аватар
   const av = document.getElementById('userAvatar');
   if (userFirstName) av.textContent = userFirstName[0].toUpperCase();
+
+  // Проверяем paywall
+  checkPaywall(userRow);
 }
 
 function mapCategories(data) {
@@ -539,6 +626,44 @@ function exportPDF(){const all=[...state.transactions].sort((a,b)=>b.date.locale
 function copyReport(){const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});let text=`📊 Отчёт по бюджету\n${dateStr}\n\n💳 Доходы: +${Number(income).toLocaleString('ru-RU')} ₽\n🛍 Расходы: −${Number(expense).toLocaleString('ru-RU')} ₽\n📊 Остаток: ${income-expense>=0?'+':'−'}${Math.abs(income-expense).toLocaleString('ru-RU')} ₽\n\n── По категориям ──\n`;state.categories.forEach(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);if(spent)text+=`${cat.icon} ${cat.name}: ${Number(spent).toLocaleString('ru-RU')} ₽\n`;});text+=`\n── Операции ──\n`;all.forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);const sign=t.type==='income'?'+':'−';text+=`${fmtDate(t.date)} ${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽ ${t.note||(cat?cat.name:'')}\n`;});navigator.clipboard.writeText(text).then(()=>showToast('📋 Скопировано!')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('📋 Скопировано!');}catch(e){showToast('⚠️ Не удалось скопировать');}document.body.removeChild(ta);});}
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── PAYWALL ──
+const LAVA_BASE = 'https://app.lava.top/products/fc483e55-2327-446f-9457-30c854677c5f/baaa1e37-7a62-444f-90c9-e99edb72cab1';
+const TRIAL_DAYS = 3;
+
+const PLAN_PERIODS = {
+  'month': '',
+  '3months': '?period=3_months',
+  '6months': '?period=6_months',
+  'year': '?period=year'
+};
+
+function checkPaywall(user) {
+  // Если уже премиум
+  if (user.is_premium && user.premium_until) {
+    const until = new Date(user.premium_until);
+    if (until > new Date()) return; // всё ок
+  }
+  // Проверяем триал
+  const trialStart = new Date(user.trial_started_at || user.created_at);
+  const now = new Date();
+  const diffDays = (now - trialStart) / (1000 * 60 * 60 * 24);
+  if (diffDays > TRIAL_DAYS) {
+    document.getElementById('paywall').classList.add('show');
+  }
+}
+
+function openPayment(plan) {
+  const period = PLAN_PERIODS[plan] || '';
+  const sep = period ? '&' : '?';
+  const url = `${LAVA_BASE}${period}${sep}externalId=${userId}`;
+  if (tg && tg.openLink) {
+    tg.openLink(url);
+  } else {
+    window.open(url, '_blank');
+  }
+  showToast('⏳ Открываем страницу оплаты...');
+}
 
 init();
 </script>
