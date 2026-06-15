@@ -46,52 +46,44 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   position:fixed;inset:0;
   background:#0A0E1A;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:9999;gap:24px;
+  z-index:9999;gap:20px;
   transition:opacity .65s ease,visibility .65s;
 }
 .loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
-
-.crystal-wrap{position:relative;width:88px;height:88px;}
-.crystal-svg{
-  width:100%;height:100%;
-  animation:crystalSpin 3s ease-in-out infinite;
-  filter:drop-shadow(0 0 14px #4a9a72) drop-shadow(0 0 36px rgba(74,154,114,.5));
+.loader-pb{
+  filter:drop-shadow(0 0 18px #00dd22) drop-shadow(0 0 40px rgba(0,200,40,.6));
+  animation:float 2.5s ease-in-out infinite;
 }
-@keyframes crystalSpin{
-  0%  {transform:rotate(0deg)   scale(1);   filter:drop-shadow(0 0 14px #4a9a72) drop-shadow(0 0 36px rgba(74,154,114,.5));}
-  25% {transform:rotate(90deg)  scale(1.08);filter:drop-shadow(0 0 22px #9B59B6) drop-shadow(0 0 50px rgba(155,89,182,.55));}
-  50% {transform:rotate(180deg) scale(1);   filter:drop-shadow(0 0 18px #E8A0B0) drop-shadow(0 0 42px rgba(232,160,176,.5));}
-  75% {transform:rotate(270deg) scale(1.05);filter:drop-shadow(0 0 20px #4a9a72) drop-shadow(0 0 48px rgba(74,154,114,.5));}
-  100%{transform:rotate(360deg) scale(1);   filter:drop-shadow(0 0 14px #4a9a72) drop-shadow(0 0 36px rgba(74,154,114,.5));}
-}
-.crystal-ring{
-  position:absolute;inset:-13px;border-radius:50%;
-  border:1.5px solid rgba(74,154,114,.22);
-  animation:ringRot 4s linear infinite;
-}
-.crystal-ring::before{
-  content:'';position:absolute;top:-2px;left:30%;
-  width:13px;height:3px;background:#4a9a72;border-radius:3px;
-  box-shadow:0 0 10px #4a9a72,0 0 22px #4a9a72;
-}
-.crystal-ring2{
-  position:absolute;inset:-25px;border-radius:50%;
-  border:1px solid rgba(155,89,182,.18);
-  animation:ringRot 6s linear infinite reverse;
-}
-.crystal-ring2::before{
-  content:'';position:absolute;bottom:-2px;right:25%;
-  width:9px;height:2.5px;background:#9B59B6;border-radius:3px;
-  box-shadow:0 0 8px #9B59B6,0 0 18px #9B59B6;
-}
-@keyframes ringRot{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-
-.loader-dots{display:flex;gap:8px;}
-.loader-dot{width:8px;height:8px;border-radius:50%;background:#4a9a72;animation:dotBounce 1.2s ease-in-out infinite;box-shadow:0 0 10px #4a9a72;}
-.loader-dot:nth-child(2){animation-delay:.2s;background:#9B59B6;box-shadow:0 0 10px #9B59B6;}
-.loader-dot:nth-child(3){animation-delay:.4s;background:#E8A0B0;box-shadow:0 0 10px #E8A0B0;}
-@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-10px);opacity:1}}
 .loader-text{font-size:13px;font-weight:700;color:rgba(255,255,255,.38);letter-spacing:1px;}
+
+
+/* ── FLIP CARD (savings/debt) ── */
+.flip-card-wrap{perspective:600px;border-radius:20px;}
+.flip-card-inner{
+  position:relative;width:100%;height:100%;min-height:118px;
+  transition:transform .5s cubic-bezier(.4,0,.2,1);
+  transform-style:preserve-3d;
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-card-front,.flip-card-back{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:20px;padding:13px 14px;display:flex;flex-direction:column;min-height:118px;
+}
+.flip-card-front{background:linear-gradient(140deg,#f0ece4,#e4ddd0);}
+.flip-card-back{background:linear-gradient(140deg,#fde0e8,#f5c8d4);transform:rotateY(180deg);}
+.flip-hint{font-size:9px;color:rgba(42,42,42,.38);margin-top:auto;text-align:right;}
+
+/* ── GOAL CONTRIBUTE ── */
+.goal-contrib-btn{
+  width:28px;height:28px;border-radius:50%;background:var(--green-dark);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;cursor:pointer;font-weight:300;line-height:1;
+  flex-shrink:0;margin-left:auto;
+}
+.goal-type-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.goal-type-btn{flex:1;padding:9px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;}
+.goal-type-btn.active-save{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+.goal-type-btn.active-debt{background:var(--pink-light);border-color:var(--pink);color:#c07080;}
 
 /* ── PARTICLES ── */
 #particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
@@ -317,43 +309,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 </symbol></defs>
 </svg>
 
-<!-- CRYSTAL LOADER -->
+<!-- LOADER -->
 <div class="loading-screen" id="loadingScreen">
-  <div class="crystal-wrap">
-    <div class="crystal-ring"></div>
-    <div class="crystal-ring2"></div>
-    <svg class="crystal-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="cg1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#4a9a72" stop-opacity=".9"/>
-          <stop offset="50%" stop-color="#9B59B6" stop-opacity=".8"/>
-          <stop offset="100%" stop-color="#E8A0B0" stop-opacity=".9"/>
-        </linearGradient>
-        <linearGradient id="cg2" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity=".65"/>
-          <stop offset="100%" stop-color="#4a9a72" stop-opacity=".25"/>
-        </linearGradient>
-        <linearGradient id="cg3" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#9B59B6" stop-opacity=".45"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity=".2"/>
-        </linearGradient>
-      </defs>
-      <polygon points="50,8 80,38 50,92 20,38" fill="url(#cg1)" opacity=".85"/>
-      <polygon points="50,8 80,38 50,50" fill="url(#cg2)" opacity=".9"/>
-      <polygon points="50,8 20,38 50,50" fill="url(#cg3)" opacity=".75"/>
-      <polygon points="20,38 50,50 50,92" fill="rgba(74,154,114,0.22)" opacity=".8"/>
-      <polygon points="80,38 50,50 50,92" fill="rgba(155,89,182,0.18)" opacity=".8"/>
-      <polygon points="50,14 74,36 50,46" fill="rgba(255,255,255,0.32)"/>
-      <polygon points="50,8 80,38 50,92 20,38" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="0.8"/>
-      <line x1="50" y1="8" x2="50" y2="92" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-      <line x1="20" y1="38" x2="80" y2="38" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-    </svg>
-  </div>
-  <div class="loader-dots">
-    <div class="loader-dot"></div>
-    <div class="loader-dot"></div>
-    <div class="loader-dot"></div>
-  </div>
+  <svg class="loader-pb" width="80" height="100"><use href="#pb"/></svg>
   <div class="loader-text">загружаем motherlode…</div>
 </div>
 
@@ -399,14 +357,29 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="stat-card-val" id="totalExpense">0 ₽</div>
         <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> этот месяц</div>
       </div>
-      <div class="stat-card sv" data-tilt>
-        <div class="stat-card-top">
-          <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><circle cx="34" cy="42" r="24" fill="#e05050"/><circle cx="34" cy="42" r="18" fill="#f5f5f5"/><circle cx="34" cy="42" r="12" fill="#e05050"/><circle cx="34" cy="42" r="6" fill="#f5f5f5"/><circle cx="34" cy="42" r="3" fill="#e05050"/><line x1="62" y1="14" x2="36" y2="40" stroke="#8B4513" stroke-width="3" stroke-linecap="round"/><polygon points="36,40 30,34 40,32" fill="#c0c0c0"/><polygon points="62,14 68,10 66,18" fill="#4a90d0"/></svg></div>
-          <div class="stat-sp">✦</div>
+      <div class="flip-card-wrap" id="flipCardWrap" onclick="toggleFlipCard()">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><circle cx="34" cy="42" r="24" fill="#e05050"/><circle cx="34" cy="42" r="18" fill="#f5f5f5"/><circle cx="34" cy="42" r="12" fill="#e05050"/><circle cx="34" cy="42" r="6" fill="#f5f5f5"/><circle cx="34" cy="42" r="3" fill="#e05050"/><line x1="62" y1="14" x2="36" y2="40" stroke="#8B4513" stroke-width="3" stroke-linecap="round"/><polygon points="36,40 30,34 40,32" fill="#c0c0c0"/><polygon points="62,14 68,10 66,18" fill="#4a90d0"/></svg></div>
+              <div class="stat-sp">✦</div>
+            </div>
+            <div class="stat-card-label">накопления</div>
+            <div class="stat-card-val" id="totalSaved">0 ₽</div>
+            <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> по целям</div>
+            <div class="flip-hint">↻ долги</div>
+          </div>
+          <div class="flip-card-back">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><rect x="10" y="20" width="50" height="34" rx="6" fill="#f07090"/><rect x="10" y="28" width="50" height="8" fill="#c04060" opacity=".4"/><rect x="16" y="36" width="14" height="4" rx="2" fill="#fff" opacity=".7"/><circle cx="56" cy="38" r="5" fill="#fff" opacity=".5"/></svg></div>
+              <div class="stat-sp pk">✦</div>
+            </div>
+            <div class="stat-card-label">долги</div>
+            <div class="stat-card-val" id="totalDebt">0 ₽</div>
+            <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> осталось</div>
+            <div class="flip-hint">↻ накопления</div>
+          </div>
         </div>
-        <div class="stat-card-label">накопления</div>
-        <div class="stat-card-val" id="totalSaved">0 ₽</div>
-        <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> по целям</div>
       </div>
       <div class="stat-card bl" data-tilt>
         <div class="stat-card-top">
@@ -504,7 +477,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 <div class="modal-overlay" id="monthModal" onclick="closeModal('monthModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">история по месяцам</div><div class="month-grid" id="monthGrid"></div></div></div>
 <div class="modal-overlay" id="txModal" onclick="closeModal('txModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="txModalTitle">новая операция</div><div class="type-toggle"><div class="type-btn active-expense" id="typeBtnExpense" onclick="setType('expense')">— расход</div><div class="type-btn" id="typeBtnIncome" onclick="setType('income')">+ доход</div></div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="txAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Описание</label><input class="form-input" id="txNote" type="text" placeholder="За что?"></div><div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="txDate" type="date"></div><div class="form-group" id="catSelectGroup"><label class="form-label">Категория</label><div class="cat-select-grid" id="catSelectGrid"></div></div><button class="btn-primary" onclick="saveTx()">Сохранить</button><button class="btn-danger" id="deleteTxBtn" onclick="deleteTx()" style="display:none">Удалить операцию</button></div></div>
 <div class="modal-overlay" id="catModal" onclick="closeModal('catModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="catModalTitle">новая категория</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="catName" type="text" placeholder="Продукты, транспорт..."></div><div class="form-group"><label class="form-label">Лимит в месяц (₽)</label><input class="form-input" id="catLimit" type="number" placeholder="необязательно"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="emojiGrid"></div></div><div class="form-group"><label class="form-label">Цвет</label><div class="color-grid" id="colorGrid"></div></div><button class="btn-primary" onclick="saveCat()">Сохранить</button><button class="btn-danger" id="deleteCatBtn" onclick="deleteCat()" style="display:none">Удалить категорию</button></div></div>
-<div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
+<div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="goal-type-toggle"><div class="goal-type-btn active-save" id="goalTypeSave" onclick="setGoalType('saving')">🎯 Накопление</div><div class="goal-type-btn" id="goalTypeDebt" onclick="setGoalType('debt')">💳 Долг</div></div>
+    <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
+<div class="modal-overlay" id="contributeModal" onclick="closeModal('contributeModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="contributeTitle">+ добавить к цели</div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="contributeAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Заметка</label><input class="form-input" id="contributeNote" type="text" placeholder="необязательно"></div><button class="btn-primary" onclick="saveContribute()">Добавить</button></div></div>
 <div class="modal-overlay" id="budgetModal" onclick="closeModal('budgetModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">бюджет месяца</div><div class="form-group"><label class="form-label">Плановый доход (₽)</label><input class="form-input" id="budgetIncome" type="number" placeholder="60000"></div><button class="btn-primary" onclick="saveBudget()">Сохранить</button></div></div>
 <div class="modal-overlay" id="reportModal" onclick="closeModal('reportModal')"><div class="modal" onclick="event.stopPropagation()" style="max-height:92vh"><div class="modal-handle"></div><div class="report-modal-header"><div class="modal-title" style="margin-bottom:0">📊 Отчёт</div><button class="btn-copy" onclick="copyReport()">📋 Скопировать</button></div><div id="reportContent" style="font-size:13px;line-height:1.7;color:var(--text)"></div><div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--muted);text-align:center">С ноута: скопируй → вставь в Word/Google Docs → сохрани как PDF</div></div></div>
 
@@ -593,7 +568,7 @@ async function initUser(){
 }
 function mapCats(data){return data.map(c=>({id:c.id,name:c.name,icon:c.icon,color:c.color,limit:c.limit_amount}));}
 function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date};}
-function mapGoal(g){return{id:g.id,name:g.name,icon:g.icon,target:Number(g.target_amount),saved:Number(g.saved_amount)};}
+function mapGoal(g){return{id:g.id,name:g.name,icon:g.icon,target:Number(g.target_amount),saved:Number(g.saved_amount),type:g.type||'saving'};}
 
 async function createDefaultCategories(){
   const d=[{name:'Еда',icon:'🛒',color:'7DC4A0',limit_amount:12000,sort_order:0},{name:'Транспорт',icon:'🚗',color:'B4A7D6',limit_amount:4000,sort_order:1},{name:'Кафе',icon:'☕',color:'E8C4A0',limit_amount:5000,sort_order:2},{name:'Квартира',icon:'🏠',color:'A7C4D6',limit_amount:25000,sort_order:3},{name:'Здоровье',icon:'💊',color:'E8A0B0',limit_amount:3000,sort_order:4},{name:'Прочее',icon:'📦',color:'C4C0BA',limit_amount:0,sort_order:5}];
@@ -602,6 +577,8 @@ async function createDefaultCategories(){
 async function saveSettings(){const theme=document.getElementById('darkToggle').checked?'dark':'light';await sb.from('user_settings').upsert({user_id:userId,budget_income:state.budget.income,theme,updated_at:new Date().toISOString()},{onConflict:'user_id'});}
 
 // ── TILT on stat cards ──
+function toggleFlipCard(){document.getElementById('flipCardWrap').classList.toggle('flipped');}
+
 function initTilt(){
   document.querySelectorAll('[data-tilt]').forEach(card=>{
     const reset=()=>{card.style.transform='';card.style.boxShadow='';};
@@ -657,10 +634,12 @@ function render(){
   const income=txM.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expense=txM.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const balance=income-expense;
-  const saved=state.goals.reduce((s,g)=>s+g.saved,0);
+  const saved=state.goals.filter(g=>g.type!=='debt').reduce((s,g)=>s+g.saved,0);
+  const debt=state.goals.filter(g=>g.type==='debt').reduce((s,g)=>Math.max(0,g.target-g.saved),0);
   document.getElementById('totalIncome').textContent=fmt(income);
   document.getElementById('totalExpense').textContent=fmt(expense);
   document.getElementById('totalSaved').textContent=fmt(saved);
+  const debtEl=document.getElementById('totalDebt');if(debtEl)debtEl.textContent=fmt(debt);
   document.getElementById('balanceCard').textContent=fmt(balance);
   const bsub=document.getElementById('balanceSub');
   bsub.innerHTML=`<svg width="9" height="11" class="float"><use href="#pb"/></svg> ${balance>=0?'профицит':'дефицит'}`;
@@ -715,7 +694,18 @@ function renderAllTx(){const el=document.getElementById('allTxList');const all=[
 function renderGoals(){
   const el=document.getElementById('goalsList');
   if(!state.goals.length){el.innerHTML='<div class="empty-state"><div class="ei">🎯</div><p>Целей пока нет.<br>Нажми + чтобы добавить</p></div>';return;}
-  el.innerHTML=state.goals.map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;return`<div class="goal-item" onclick="editGoal('${g.id}')"><div class="goal-header"><div class="goal-icon">${g.icon}</div><div class="goal-name">${g.name}</div><div class="goal-pct">${pct}%</div></div><div class="goal-bar"><div class="goal-bar-fill" style="width:${pct}%"></div></div><div class="goal-amounts"><span>накоплено: <strong>${fmt(g.saved)}</strong></span><span>цель: <strong>${fmt(g.target)}</strong></span></div></div>`;}).join('');
+  const savings=state.goals.filter(g=>g.type!=='debt');
+  const debts=state.goals.filter(g=>g.type==='debt');
+  function goalHtml(g){
+    const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
+    const barColor=g.type==='debt'?'linear-gradient(90deg,#E8A0B0,#f5c8d4)':'linear-gradient(90deg,var(--green),#a8dfc0)';
+    const label=g.type==='debt'?`выплачено: <strong>${fmt(g.saved)}</strong>`:`накоплено: <strong>${fmt(g.saved)}</strong>`;
+    return`<div class="goal-item"><div class="goal-header" onclick="editGoal('${g.id}')"><div class="goal-icon">${g.icon}</div><div class="goal-name">${g.name}</div><div class="goal-pct">${pct}%</div><div class="goal-contrib-btn" onclick="event.stopPropagation();openContribute('${g.id}')">+</div></div><div class="goal-bar" onclick="editGoal('${g.id}')"><div class="goal-bar-fill" style="width:${pct}%;background:${barColor}"></div></div><div class="goal-amounts" onclick="editGoal('${g.id}')"><span>${label}</span><span>${g.type==='debt'?'долг':'цель'}: <strong>${fmt(g.target)}</strong></span></div></div>`;
+  }
+  let out='';
+  if(savings.length){out+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:4px 0 8px">🎯 НАКОПЛЕНИЯ</div>`+savings.map(goalHtml).join('');}
+  if(debts.length){out+=`<div style="font-size:12px;font-weight:800;color:#c07080;margin:12px 0 8px">💳 ДОЛГИ</div>`+debts.map(goalHtml).join('');}
+  el.innerHTML=out;
 }
 
 function switchPage(name,el){
@@ -803,23 +793,50 @@ async function deleteCat(){
   setSyncing(false);
 }
 
-let editingGoalId=null,selectedGoalEmoji='🎯';
+let editingGoalId=null,selectedGoalEmoji='🎯',currentGoalType='saving';
 function openGoalModal(id){
-  editingGoalId=id||null;selectedGoalEmoji='🎯';
-  if(id){const g=state.goals.find(x=>x.id===id);document.getElementById('goalModalTitle').textContent='редактировать цель';document.getElementById('goalName').value=g.name;document.getElementById('goalTarget').value=g.target;document.getElementById('goalSaved').value=g.saved;selectedGoalEmoji=g.icon;document.getElementById('deleteGoalBtn').style.display='block';}
-  else{document.getElementById('goalModalTitle').textContent='новая цель';document.getElementById('goalName').value='';document.getElementById('goalTarget').value='';document.getElementById('goalSaved').value='';document.getElementById('deleteGoalBtn').style.display='none';}
+  editingGoalId=id||null;selectedGoalEmoji='🎯';currentGoalType='saving';
+  if(id){const g=state.goals.find(x=>x.id===id);document.getElementById('goalModalTitle').textContent='редактировать цель';document.getElementById('goalName').value=g.name;document.getElementById('goalTarget').value=g.target;document.getElementById('goalSaved').value=g.saved;selectedGoalEmoji=g.icon;currentGoalType=g.type||'saving';setGoalType(currentGoalType);document.getElementById('deleteGoalBtn').style.display='block';}
+  else{document.getElementById('goalModalTitle').textContent='новая цель';document.getElementById('goalName').value='';document.getElementById('goalTarget').value='';document.getElementById('goalSaved').value='';document.getElementById('deleteGoalBtn').style.display='none';setGoalType('saving');}
   renderEmojiGrid('goalEmojiGrid',selectedGoalEmoji);
   setTimeout(()=>{document.querySelectorAll('#goalEmojiGrid .emoji-btn').forEach(btn=>{btn.onclick=()=>{selectedGoalEmoji=btn.textContent;document.querySelectorAll('#goalEmojiGrid .emoji-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');};});},50);
   openModal('goalModal');
 }
 function editGoal(id){openGoalModal(id);}
+function setGoalType(t){currentGoalType=t;document.getElementById('goalTypeSave').className='goal-type-btn'+(t==='saving'?' active-save':'');document.getElementById('goalTypeDebt').className='goal-type-btn'+(t==='debt'?' active-debt':'');}
+
+let contributingGoalId=null;
+function openContribute(id){
+  contributingGoalId=id;
+  const g=state.goals.find(x=>x.id===id);
+  document.getElementById('contributeTitle').textContent=(g.type==='debt'?'💳 выплатить по долгу: ':'🎯 добавить к цели: ')+g.name;
+  document.getElementById('contributeAmount').value='';
+  document.getElementById('contributeNote').value='';
+  openModal('contributeModal');
+  setTimeout(()=>document.getElementById('contributeAmount').focus(),300);
+}
+async function saveContribute(){
+  const amount=parseFloat(document.getElementById('contributeAmount').value);
+  if(!amount||amount<=0){showToast('⚠️ Введи сумму');return;}
+  const g=state.goals.find(x=>x.id===contributingGoalId);
+  if(!g)return;
+  const newSaved=g.saved+amount;
+  setSyncing(true);
+  try{
+    await sb.from('goals').update({saved_amount:newSaved}).eq('id',contributingGoalId);
+    g.saved=newSaved;
+    closeModal('contributeModal');render();
+    showToast('✅ '+fmt(amount)+' добавлено');
+  }catch(e){showToast('❌ Ошибка');}
+  setSyncing(false);
+}
 async function saveGoal(){
   const name=document.getElementById('goalName').value.trim();const target=parseFloat(document.getElementById('goalTarget').value)||0;const saved=parseFloat(document.getElementById('goalSaved').value)||0;
   if(!name){showToast('⚠️ Введи название');return;}
   setSyncing(true);
   try{
-    if(editingGoalId){await sb.from('goals').update({name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved}).eq('id',editingGoalId);const g=state.goals.find(x=>x.id===editingGoalId);Object.assign(g,{name,icon:selectedGoalEmoji,target,saved});}
-    else{const newGoal={id:uid(),user_id:userId,name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved};await sb.from('goals').insert(newGoal);state.goals.push({id:newGoal.id,name,icon:selectedGoalEmoji,target,saved});}
+    if(editingGoalId){await sb.from('goals').update({name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType}).eq('id',editingGoalId);const g=state.goals.find(x=>x.id===editingGoalId);Object.assign(g,{name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
+    else{const newGoal={id:uid(),user_id:userId,name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType};await sb.from('goals').insert(newGoal);state.goals.push({id:newGoal.id,name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
     closeModal('goalModal');render();showToast('✅ Цель сохранена');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
