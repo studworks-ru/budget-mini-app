@@ -85,6 +85,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .goal-type-btn.active-save{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
 .goal-type-btn.active-debt{background:var(--pink-light);border-color:var(--pink);color:#c07080;}
 
+/* ── INCOME SOURCES BACK ── */
+.income-back-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:rgba(42,42,42,.75);margin-bottom:2px;}
+.income-back-bar{height:3px;background:rgba(74,154,114,.2);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.income-back-bar-fill{height:100%;border-radius:2px;background:var(--green-dark);}
+
 /* ── PARTICLES ── */
 #particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
 .particle{position:absolute;border-radius:50%;opacity:0;animation:particleRise linear infinite;}
@@ -339,14 +344,27 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
   <!-- ОБЗОР -->
   <div class="page active" id="page-home">
     <div class="stats-row">
-      <div class="stat-card ic" data-tilt>
-        <div class="stat-card-top">
-          <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><ellipse cx="58" cy="52" rx="14" ry="7" fill="#e8c840" opacity=".7"/><ellipse cx="58" cy="49" rx="14" ry="7" fill="#f5d840"/><ellipse cx="58" cy="46" rx="14" ry="7" fill="#fce860"/><rect x="6" y="28" width="44" height="28" rx="4" fill="#7ab870" transform="rotate(-6,28,42)"/><rect x="8" y="26" width="44" height="28" rx="4" fill="#8cc87a" transform="rotate(-3,30,40)"/><rect x="10" y="24" width="44" height="28" rx="4" fill="#a0d88a"/><rect x="14" y="28" width="36" height="20" rx="2" fill="#8cc87a"/><ellipse cx="32" cy="38" rx="8" ry="8" fill="#a0d88a"/><ellipse cx="32" cy="38" rx="5" ry="5" fill="#8cc87a"/><text x="29" y="41" font-size="7" fill="#5a9a5a" font-weight="bold" font-family="sans-serif">$</text></svg></div>
-          <div class="stat-sp">✦</div>
+      <div class="flip-card-wrap" id="flipIncomeCardWrap" onclick="toggleIncomeCard()">
+        <div class="flip-card-inner">
+          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><ellipse cx="58" cy="52" rx="14" ry="7" fill="#e8c840" opacity=".7"/><ellipse cx="58" cy="49" rx="14" ry="7" fill="#f5d840"/><ellipse cx="58" cy="46" rx="14" ry="7" fill="#fce860"/><rect x="6" y="28" width="44" height="28" rx="4" fill="#7ab870" transform="rotate(-6,28,42)"/><rect x="8" y="26" width="44" height="28" rx="4" fill="#8cc87a" transform="rotate(-3,30,40)"/><rect x="10" y="24" width="44" height="28" rx="4" fill="#a0d88a"/><rect x="14" y="28" width="36" height="20" rx="2" fill="#8cc87a"/><ellipse cx="32" cy="38" rx="8" ry="8" fill="#a0d88a"/><ellipse cx="32" cy="38" rx="5" ry="5" fill="#8cc87a"/><text x="29" y="41" font-size="7" fill="#5a9a5a" font-weight="bold" font-family="sans-serif">$</text></svg></div>
+              <div class="stat-sp">✦</div>
+            </div>
+            <div class="stat-card-label">доходы</div>
+            <div class="stat-card-val" id="totalIncome">0 ₽</div>
+            <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> этот месяц</div>
+            <div class="flip-hint">↻ источники</div>
+          </div>
+          <div class="flip-card-back" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
+            <div style="font-size:11px;font-weight:700;color:rgba(42,42,42,.55);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+              источники
+              <span style="font-size:20px;cursor:pointer;color:var(--green-dark);font-weight:300;line-height:1;" onclick="event.stopPropagation();openIncomeSourceModal()">+</span>
+            </div>
+            <div id="incomeCardBack" style="flex:1;overflow:hidden;"></div>
+            <div class="flip-hint">↻ доходы</div>
+          </div>
         </div>
-        <div class="stat-card-label">доходы</div>
-        <div class="stat-card-val" id="totalIncome">0 ₽</div>
-        <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> этот месяц</div>
       </div>
       <div class="stat-card ex" data-tilt>
         <div class="stat-card-top">
@@ -420,6 +438,14 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
     </div>
 
     <div class="section">
+      <div class="section-header">
+        <div class="section-title">источники дохода</div>
+        <div class="btn-add" onclick="openIncomeSourceModal()">+</div>
+      </div>
+      <div id="incomeSourcesList"></div>
+    </div>
+
+    <div class="section">
       <div class="section-header"><div class="section-title">последние операции</div></div>
       <div class="tx-list-card"><div id="recentTx"></div></div>
     </div>
@@ -480,6 +506,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 <div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="goal-type-toggle"><div class="goal-type-btn active-save" id="goalTypeSave" onclick="setGoalType('saving')">🎯 Накопление</div><div class="goal-type-btn" id="goalTypeDebt" onclick="setGoalType('debt')">💳 Долг</div></div>
     <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
 <div class="modal-overlay" id="contributeModal" onclick="closeModal('contributeModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="contributeTitle">+ добавить к цели</div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="contributeAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Заметка</label><input class="form-input" id="contributeNote" type="text" placeholder="необязательно"></div><button class="btn-primary" onclick="saveContribute()">Добавить</button></div></div>
+<div class="modal-overlay" id="incomeSourceModal" onclick="closeModal('incomeSourceModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="isModalTitle">новый источник</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="isName" type="text" placeholder="Зарплата, фриланс..."></div><div class="form-group"><label class="form-label">Плановая сумма (₽)</label><input class="form-input" id="isExpected" type="number" placeholder="100000"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="isEmojiGrid"></div></div><button class="btn-primary" onclick="saveIncomeSource()">Сохранить</button><button class="btn-danger" id="deleteIsBtn" onclick="deleteIncomeSource()" style="display:none">Удалить источник</button></div></div>
+<div class="modal-overlay" id="incomeContributeModal" onclick="closeModal('incomeContributeModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="icTitle">+ записать доход</div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="icAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="icDate" type="date"></div><button class="btn-primary" onclick="saveIncomeContribute()">Добавить</button></div></div>
 <div class="modal-overlay" id="budgetModal" onclick="closeModal('budgetModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">бюджет месяца</div><div class="form-group"><label class="form-label">Плановый доход (₽)</label><input class="form-input" id="budgetIncome" type="number" placeholder="60000"></div><button class="btn-primary" onclick="saveBudget()">Сохранить</button></div></div>
 <div class="modal-overlay" id="reportModal" onclick="closeModal('reportModal')"><div class="modal" onclick="event.stopPropagation()" style="max-height:92vh"><div class="modal-handle"></div><div class="report-modal-header"><div class="modal-title" style="margin-bottom:0">📊 Отчёт</div><button class="btn-copy" onclick="copyReport()">📋 Скопировать</button></div><div id="reportContent" style="font-size:13px;line-height:1.7;color:var(--text)"></div><div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--muted);text-align:center">С ноута: скопируй → вставь в Word/Google Docs → сохрани как PDF</div></div></div>
 
@@ -535,7 +563,7 @@ function toggleTheme(dark){applyTheme(dark);saveSettings();}
   setInterval(spawn,520);
 })();
 
-let state={categories:[],transactions:[],goals:[],budget:{income:60000}};
+let state={categories:[],transactions:[],goals:[],incomeSources:[],budget:{income:60000}};
 let donutChart=null,barChart=null;
 let activeYear=new Date().getFullYear(),activeMonth=new Date().getMonth();
 
@@ -547,28 +575,51 @@ function isCurrentMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00'),n=new
 function isActiveMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00');return d.getMonth()===activeMonth&&d.getFullYear()===activeYear;}
 function setSyncing(v){document.getElementById('syncIndicator').classList.toggle('syncing',v);}
 
+const CACHE_KEY=`ml_cache_${userId}`;
+function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({categories:state.categories,transactions:state.transactions,goals:state.goals,incomeSources:state.incomeSources,budget:state.budget,ts:Date.now()}));}catch(e){}}
+function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d){state.categories=d.categories||[];state.transactions=d.transactions||[];state.goals=d.goals||[];state.incomeSources=d.incomeSources||[];state.budget=d.budget||{income:60000};return true;}}catch(e){}return false;}
+
 async function initUser(){
-  await sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'});
-  const{data:userRow}=await sb.from('users').select('*').eq('id',userId).single();
-  const[cats,txs,goals,settings]=await Promise.all([
-    sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
-    sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
-    sb.from('goals').select('*').eq('user_id',userId),
-    sb.from('user_settings').select('*').eq('user_id',userId).single()
-  ]);
-  if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
-  else{state.categories=mapCats(cats.data);}
-  state.transactions=(txs.data||[]).map(mapTx);
-  state.goals=(goals.data||[]).map(mapGoal);
-  state.budget={income:settings.data?.budget_income||60000};
-  if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
-  const av=document.getElementById('userAvatar');
-  if(userFirstName)av.textContent=userFirstName[0].toUpperCase();
-  checkPaywall(userRow);
+  // 1. Show from cache immediately
+  const hasCached=loadCache();
+  if(hasCached){
+    document.getElementById('loadingScreen').classList.add('hidden');
+    render();
+  }
+
+  // 2. Fetch from Supabase in background
+  try{
+    const[upsertRes,cats,txs,goals,settings,iSrc]=await Promise.all([
+      sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'}).select('*').single(),
+      sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
+      sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
+      sb.from('goals').select('*').eq('user_id',userId),
+      sb.from('user_settings').select('*').eq('user_id',userId).single(),
+      sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order')
+    ]);
+
+    const userRow=upsertRes.data;
+    if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
+    else{state.categories=mapCats(cats.data);}
+    state.transactions=(txs.data||[]).map(mapTx);
+    state.goals=(goals.data||[]).map(mapGoal);
+    state.incomeSources=(iSrc.data||[]).map(mapIncomeSource);
+    state.budget={income:settings.data?.budget_income||60000};
+    if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
+    const av=document.getElementById('userAvatar');
+    if(userFirstName&&av)av.textContent=userFirstName[0].toUpperCase();
+    saveCache();
+    render();
+    if(userRow)checkPaywall(userRow);
+  }catch(e){
+    console.error(e);
+    if(!hasCached){showToast('⚠️ Нет соединения — офлайн режим');loadLocalFallback();}
+  }
 }
 function mapCats(data){return data.map(c=>({id:c.id,name:c.name,icon:c.icon,color:c.color,limit:c.limit_amount}));}
-function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date};}
+function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date,incomeSourceId:t.income_source_id||null};}
 function mapGoal(g){return{id:g.id,name:g.name,icon:g.icon,target:Number(g.target_amount),saved:Number(g.saved_amount),type:g.type||'saving'};}
+function mapIncomeSource(s){return{id:s.id,name:s.name,icon:s.icon||'💰',expected:Number(s.expected_amount||0)};}
 
 async function createDefaultCategories(){
   const d=[{name:'Еда',icon:'🛒',color:'7DC4A0',limit_amount:12000,sort_order:0},{name:'Транспорт',icon:'🚗',color:'B4A7D6',limit_amount:4000,sort_order:1},{name:'Кафе',icon:'☕',color:'E8C4A0',limit_amount:5000,sort_order:2},{name:'Квартира',icon:'🏠',color:'A7C4D6',limit_amount:25000,sort_order:3},{name:'Здоровье',icon:'💊',color:'E8A0B0',limit_amount:3000,sort_order:4},{name:'Прочее',icon:'📦',color:'C4C0BA',limit_amount:0,sort_order:5}];
@@ -578,6 +629,33 @@ async function saveSettings(){const theme=document.getElementById('darkToggle').
 
 // ── TILT on stat cards ──
 function toggleFlipCard(){document.getElementById('flipCardWrap').classList.toggle('flipped');}
+function toggleIncomeCard(){document.getElementById('flipIncomeCardWrap').classList.toggle('flipped');}
+
+function renderIncomeSources(txM){
+  const incomeTx=txM.filter(t=>t.type==='income');
+  const el=document.getElementById('incomeSourcesList');
+  const back=document.getElementById('incomeCardBack');
+  if(!state.incomeSources.length){
+    if(el)el.innerHTML='<div class="empty-state"><div class="ei">💰</div><p>Источников нет.<br>Нажми + чтобы добавить</p></div>';
+    if(back)back.innerHTML='<div style="font-size:10px;color:rgba(42,42,42,.4);text-align:center;padding-top:6px">нет источников</div>';
+    return;
+  }
+  if(back){
+    back.innerHTML=state.incomeSources.slice(0,3).map(s=>{
+      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
+      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
+      return '<div class="income-back-item"><span style="font-size:12px">'+s.icon+'</span><span style="flex:1;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+s.name+'</span><span style="font-size:10px;font-weight:800;color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</span></div><div class="income-back-bar"><div class="income-back-bar-fill" style="width:'+pct+'%"></div></div>';
+    }).join('');
+  }
+  if(el){
+    el.innerHTML=state.incomeSources.map(s=>{
+      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
+      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
+      return '<div class="cat-item" onclick="openIncomeSourceModal(''+s.id+'')"><div class="cat-icon" style="background:var(--green-light)">'+s.icon+'</div><div class="cat-info"><div class="cat-name">'+s.name+'</div><div class="cat-bar"><div class="cat-bar-fill" style="width:'+pct+'%;background:var(--green-dark)"></div></div></div><div class="cat-right"><div class="cat-spent" style="color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</div><div class="cat-limit">'+(s.expected?'план: '+s.expected.toLocaleString('ru-RU')+' ₽':'без плана')+'</div></div><div class="goal-contrib-btn" onclick="event.stopPropagation();openIncomeContribute(''+s.id+'')">+</div></div>';
+    }).join('');
+  }
+}
+
 
 function initTilt(){
   document.querySelectorAll('[data-tilt]').forEach(card=>{
@@ -595,8 +673,7 @@ function initTilt(){
 }
 
 async function init(){
-  try{await initUser();}
-  catch(e){console.error(e);showToast('⚠️ Нет соединения — офлайн режим');loadLocalFallback();}
+  await initUser();
   document.getElementById('loadingScreen').classList.add('hidden');
   render();
   initTilt();
@@ -644,7 +721,7 @@ function render(){
   const bsub=document.getElementById('balanceSub');
   bsub.innerHTML=`<svg width="9" height="11" class="float"><use href="#pb"/></svg> ${balance>=0?'профицит':'дефицит'}`;
   bsub.style.color=balance>=0?'var(--green-dark)':'#c07080';
-  renderDonut(txM);renderBar();renderCategories(txM);renderRecentTx();renderAllTx();renderGoals();
+  renderDonut(txM);renderBar();renderCategories(txM);renderRecentTx();renderAllTx();renderGoals();renderIncomeSources(txM);
 }
 
 function renderDonut(txM){
@@ -720,7 +797,7 @@ function switchPage(name,el){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
 
-const EMOJIS=['🛒','🚗','☕','🏠','💊','📱','🎭','👗','📚','✈️','🎮','🍕','💈','🔧','🎁','💡','🏋️','🐾','🏦','📦'];
+const EMOJIS=['🛒','🚗','☕','🏠','💊','📱','🎭','👗','💍','📚','✈️','🎮','🍕','💈','🔧','🎁','💡','🏋️','🏦','📦','🥤','🛵','💄','🧥','🧴','🎀','🍔','🏥','💸','🎓','🐶','🌿','🎵','🍷','💻','🚕','🚇'];
 let currentType='expense',selectedCatId=null,editingTxId=null;
 
 function openTxModal(id){
@@ -751,19 +828,19 @@ async function saveTx(){
   try{
     if(editingTxId){await sb.from('transactions').update({type:currentType,amount,note,category_id:selectedCatId,date}).eq('id',editingTxId);const t=state.transactions.find(x=>x.id===editingTxId);Object.assign(t,{type:currentType,amount,note,catId:selectedCatId,date});}
     else{const newTx={id:uid(),user_id:userId,type:currentType,amount,note,category_id:selectedCatId,date};await sb.from('transactions').insert(newTx);state.transactions.push({id:newTx.id,type:currentType,amount,note,catId:selectedCatId,date});}
-    closeModal('txModal');render();showToast('✅ Сохранено');
+    closeModal('txModal');render();saveCache();showToast('✅ Сохранено');
   }catch(e){showToast('❌ Ошибка сохранения');}
   setSyncing(false);
 }
 async function deleteTx(){
   setSyncing(true);
-  try{await sb.from('transactions').delete().eq('id',editingTxId);state.transactions=state.transactions.filter(t=>t.id!==editingTxId);closeModal('txModal');render();showToast('🗑️ Удалено');}
+  try{await sb.from('transactions').delete().eq('id',editingTxId);state.transactions=state.transactions.filter(t=>t.id!==editingTxId);closeModal('txModal');render();saveCache();showToast('🗑️ Удалено');}
   catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
 
 let editingCatId=null,selectedEmoji='📦',selectedColor='C4C0BA';
-const COLORS=['7DC4A0','E8A0B0','B4A7D6','A7C4D6','E8C4A0','C4C0BA','8EC6E0','D4A0C8'];
+const COLORS=['7DC4A0','E8A0B0','B4A7D6','A7C4D6','E8C4A0','C4C0BA','8EC6E0','D4A0C8','F4A261','70C1B3'];
 function openCatModal(id){
   editingCatId=id||null;selectedEmoji='📦';selectedColor='C4C0BA';
   if(id){const cat=state.categories.find(c=>c.id===id);document.getElementById('catModalTitle').textContent='редактировать';document.getElementById('catName').value=cat.name;document.getElementById('catLimit').value=cat.limit||'';selectedEmoji=cat.icon;selectedColor=cat.color;document.getElementById('deleteCatBtn').style.display='block';}
@@ -782,7 +859,7 @@ async function saveCat(){
   try{
     if(editingCatId){await sb.from('categories').update({name,icon:selectedEmoji,color:selectedColor,limit_amount:limit}).eq('id',editingCatId);const cat=state.categories.find(c=>c.id===editingCatId);Object.assign(cat,{name,icon:selectedEmoji,color:selectedColor,limit});}
     else{const newCat={id:uid(),user_id:userId,name,icon:selectedEmoji,color:selectedColor,limit_amount:limit,sort_order:state.categories.length};await sb.from('categories').insert(newCat);state.categories.push({id:newCat.id,name,icon:selectedEmoji,color:selectedColor,limit});}
-    closeModal('catModal');render();showToast('✅ Категория сохранена');
+    closeModal('catModal');render();saveCache();showToast('✅ Категория сохранена');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
@@ -803,6 +880,59 @@ function openGoalModal(id){
   openModal('goalModal');
 }
 function editGoal(id){openGoalModal(id);}
+let editingIsId=null,selectedIsEmoji='💰';
+function openIncomeSourceModal(id){
+  editingIsId=id||null;selectedIsEmoji='💰';
+  if(id){const s=state.incomeSources.find(x=>x.id===id);if(!s)return;document.getElementById('isModalTitle').textContent='редактировать источник';document.getElementById('isName').value=s.name;document.getElementById('isExpected').value=s.expected||'';selectedIsEmoji=s.icon;document.getElementById('deleteIsBtn').style.display='block';}
+  else{document.getElementById('isModalTitle').textContent='новый источник';document.getElementById('isName').value='';document.getElementById('isExpected').value='';document.getElementById('deleteIsBtn').style.display='none';}
+  renderEmojiGrid('isEmojiGrid',selectedIsEmoji);
+  setTimeout(()=>{document.querySelectorAll('#isEmojiGrid .emoji-btn').forEach(btn=>{btn.onclick=()=>{selectedIsEmoji=btn.textContent;document.querySelectorAll('#isEmojiGrid .emoji-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');};});},50);
+  openModal('incomeSourceModal');setTimeout(()=>document.getElementById('isName').focus(),300);
+}
+async function saveIncomeSource(){
+  const name=document.getElementById('isName').value.trim();
+  const expected=parseFloat(document.getElementById('isExpected').value)||0;
+  if(!name){showToast('⚠️ Введи название');return;}
+  setSyncing(true);
+  try{
+    if(editingIsId){await sb.from('income_sources').update({name,icon:selectedIsEmoji,expected_amount:expected}).eq('id',editingIsId);const s=state.incomeSources.find(x=>x.id===editingIsId);Object.assign(s,{name,icon:selectedIsEmoji,expected});}
+    else{const nS={id:uid(),user_id:userId,name,icon:selectedIsEmoji,expected_amount:expected,sort_order:state.incomeSources.length};await sb.from('income_sources').insert(nS);state.incomeSources.push({id:nS.id,name,icon:selectedIsEmoji,expected});}
+    closeModal('incomeSourceModal');render();saveCache();showToast('✅ Источник сохранён');
+  }catch(e){showToast('❌ Ошибка');}
+  setSyncing(false);
+}
+async function deleteIncomeSource(){
+  setSyncing(true);
+  try{await sb.from('income_sources').delete().eq('id',editingIsId);state.incomeSources=state.incomeSources.filter(s=>s.id!==editingIsId);closeModal('incomeSourceModal');render();showToast('🗑️ Удалён');}
+  catch(e){showToast('❌ Ошибка');}
+  setSyncing(false);
+}
+let contributingIsId=null;
+function openIncomeContribute(id){
+  contributingIsId=id;
+  const s=state.incomeSources.find(x=>x.id===id);
+  document.getElementById('icTitle').textContent='+ '+s.name;
+  document.getElementById('icAmount').value='';
+  document.getElementById('icDate').value=todayISO();
+  openModal('incomeContributeModal');
+  setTimeout(()=>document.getElementById('icAmount').focus(),300);
+}
+async function saveIncomeContribute(){
+  const amount=parseFloat(document.getElementById('icAmount').value);
+  const dateVal=document.getElementById('icDate').value;
+  if(!amount||amount<=0){showToast('⚠️ Введи сумму');return;}
+  const s=state.incomeSources.find(x=>x.id===contributingIsId);if(!s)return;
+  setSyncing(true);
+  try{
+    const date=dateVal+'T12:00:00';
+    const nTx={id:uid(),user_id:userId,type:'income',amount,note:s.name,category_id:null,date,income_source_id:contributingIsId};
+    await sb.from('transactions').insert(nTx);
+    state.transactions.push({id:nTx.id,type:'income',amount,note:s.name,catId:null,date,incomeSourceId:contributingIsId});
+    closeModal('incomeContributeModal');render();saveCache();showToast('✅ '+s.name+' +'+fmt(amount));
+  }catch(e){showToast('❌ Ошибка');}
+  setSyncing(false);
+}
+
 function setGoalType(t){currentGoalType=t;document.getElementById('goalTypeSave').className='goal-type-btn'+(t==='saving'?' active-save':'');document.getElementById('goalTypeDebt').className='goal-type-btn'+(t==='debt'?' active-debt':'');}
 
 let contributingGoalId=null;
@@ -825,7 +955,7 @@ async function saveContribute(){
   try{
     await sb.from('goals').update({saved_amount:newSaved}).eq('id',contributingGoalId);
     g.saved=newSaved;
-    closeModal('contributeModal');render();
+    closeModal('contributeModal');render();saveCache();
     showToast('✅ '+fmt(amount)+' добавлено');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
@@ -837,7 +967,7 @@ async function saveGoal(){
   try{
     if(editingGoalId){await sb.from('goals').update({name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType}).eq('id',editingGoalId);const g=state.goals.find(x=>x.id===editingGoalId);Object.assign(g,{name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
     else{const newGoal={id:uid(),user_id:userId,name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType};await sb.from('goals').insert(newGoal);state.goals.push({id:newGoal.id,name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
-    closeModal('goalModal');render();showToast('✅ Цель сохранена');
+    closeModal('goalModal');render();saveCache();showToast('✅ Цель сохранена');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
