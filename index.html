@@ -343,9 +343,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
   <!-- ОБЗОР -->
   <div class="page active" id="page-home">
     <div class="stats-row">
-      <div class="flip-card-wrap" id="flipIncomeCardWrap" onclick="toggleIncomeCard()">
+      <div class="flip-card-wrap" id="flipIncomeCardWrap">
         <div class="flip-card-inner">
-          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
+          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);" data-tilt>
             <div class="stat-card-top">
               <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><ellipse cx="58" cy="52" rx="14" ry="7" fill="#e8c840" opacity=".7"/><ellipse cx="58" cy="49" rx="14" ry="7" fill="#f5d840"/><ellipse cx="58" cy="46" rx="14" ry="7" fill="#fce860"/><rect x="6" y="28" width="44" height="28" rx="4" fill="#7ab870" transform="rotate(-6,28,42)"/><rect x="8" y="26" width="44" height="28" rx="4" fill="#8cc87a" transform="rotate(-3,30,40)"/><rect x="10" y="24" width="44" height="28" rx="4" fill="#a0d88a"/><rect x="14" y="28" width="36" height="20" rx="2" fill="#8cc87a"/><ellipse cx="32" cy="38" rx="8" ry="8" fill="#a0d88a"/><ellipse cx="32" cy="38" rx="5" ry="5" fill="#8cc87a"/><text x="29" y="41" font-size="7" fill="#5a9a5a" font-weight="bold" font-family="sans-serif">$</text></svg></div>
               <div class="stat-sp">✦</div>
@@ -353,7 +353,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div class="stat-card-label">доходы</div>
             <div class="stat-card-val" id="totalIncome">0 ₽</div>
             <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> этот месяц</div>
-            <div class="flip-hint">↻ источники</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleIncomeCard()">↻ источники</div>
           </div>
           <div class="flip-card-back" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
             <div style="font-size:11px;font-weight:700;color:rgba(42,42,42,.55);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
@@ -361,7 +361,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
               <span style="font-size:20px;cursor:pointer;color:var(--green-dark);font-weight:300;line-height:1;" onclick="event.stopPropagation();openIncomeSourceModal()">+</span>
             </div>
             <div id="incomeCardBack" style="flex:1;overflow:hidden;"></div>
-            <div class="flip-hint">↻ доходы</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleIncomeCard()">↻ доходы</div>
           </div>
         </div>
       </div>
@@ -374,7 +374,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="stat-card-val" id="totalExpense">0 ₽</div>
         <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> этот месяц</div>
       </div>
-      <div class="flip-card-wrap" id="flipCardWrap" onclick="toggleFlipCard()">
+      <div class="flip-card-wrap" id="flipCardWrap">
         <div class="flip-card-inner">
           <div class="flip-card-front">
             <div class="stat-card-top">
@@ -384,7 +384,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div class="stat-card-label">накопления</div>
             <div class="stat-card-val" id="totalSaved">0 ₽</div>
             <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> по целям</div>
-            <div class="flip-hint">↻ долги</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleFlipCard()">↻ долги</div>
           </div>
           <div class="flip-card-back">
             <div class="stat-card-top">
@@ -394,7 +394,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div class="stat-card-label">долги</div>
             <div class="stat-card-val" id="totalDebt">0 ₽</div>
             <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> осталось</div>
-            <div class="flip-hint">↻ накопления</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleFlipCard()">↻ накопления</div>
           </div>
         </div>
       </div>
@@ -599,6 +599,21 @@ async function initUser(){
   checkPaywall(userRow);
 }
 
+function initTilt(){
+  document.querySelectorAll('[data-tilt]').forEach(card=>{
+    const reset=()=>{card.style.transform='';card.style.boxShadow='';};
+    const apply=(x,y)=>{
+      card.style.transform=`perspective(500px) rotateX(${-y*10}deg) rotateY(${x*10}deg) scale(1.03)`;
+      card.style.boxShadow='0 10px 28px rgba(0,0,0,0.13)';
+    };
+    card.addEventListener('touchstart',e=>{const t=e.touches[0],r=card.getBoundingClientRect();apply((t.clientX-r.left)/r.width-.5,(t.clientY-r.top)/r.height-.5);},{passive:true});
+    card.addEventListener('touchmove',e=>{const t=e.touches[0],r=card.getBoundingClientRect();apply((t.clientX-r.left)/r.width-.5,(t.clientY-r.top)/r.height-.5);},{passive:true});
+    card.addEventListener('touchend',()=>reset());
+    card.addEventListener('mousemove',e=>{const r=card.getBoundingClientRect();apply((e.clientX-r.left)/r.width-.5,(e.clientY-r.top)/r.height-.5);});
+    card.addEventListener('mouseleave',reset);
+  });
+}
+
 async function init(){
   try{await initUser();}
   catch(e){console.error(e);showToast('⚠️ Нет соединения');loadLocalFallback();}
@@ -760,7 +775,7 @@ async function saveTx(){
     if(editingTxId){await sb.from('transactions').update({type:currentType,amount,note,category_id:selectedCatId,date}).eq('id',editingTxId);const t=state.transactions.find(x=>x.id===editingTxId);Object.assign(t,{type:currentType,amount,note,catId:selectedCatId,date});}
     else{const newTx={id:uid(),user_id:userId,type:currentType,amount,note,category_id:selectedCatId,date};await sb.from('transactions').insert(newTx);state.transactions.push({id:newTx.id,type:currentType,amount,note,catId:selectedCatId,date});}
     closeModal('txModal');render();showToast('✅ Сохранено');
-  }catch(e){showToast('❌ Ошибка сохранения');}
+  }catch(e){showToast('❌ '+(e?.message||e?.error_description||'Ошибка сохранения'));console.error(e);}
   setSyncing(false);
 }
 async function deleteTx(){
