@@ -579,42 +579,28 @@ const CACHE_KEY=`ml_cache_${userId}`;
 function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({categories:state.categories,transactions:state.transactions,goals:state.goals,incomeSources:state.incomeSources,budget:state.budget,ts:Date.now()}));}catch(e){}}
 function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d){state.categories=d.categories||[];state.transactions=d.transactions||[];state.goals=d.goals||[];state.incomeSources=d.incomeSources||[];state.budget=d.budget||{income:60000};return true;}}catch(e){}return false;}
 
-async function initUser(){
-  // 1. Show from cache immediately
-  const hasCached=loadCache();
-  if(hasCached){
-    document.getElementById('loadingScreen').classList.add('hidden');
-    render();
-  }
-
-  // 2. Fetch from Supabase in background
-  try{
-    const[upsertRes,cats,txs,goals,settings,iSrc]=await Promise.all([
-      sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'}).select('*').single(),
-      sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
-      sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
-      sb.from('goals').select('*').eq('user_id',userId),
-      sb.from('user_settings').select('*').eq('user_id',userId).single(),
-      sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order')
-    ]);
-
-    const userRow=upsertRes.data;
-    if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
-    else{state.categories=mapCats(cats.data);}
-    state.transactions=(txs.data||[]).map(mapTx);
-    state.goals=(goals.data||[]).map(mapGoal);
-    state.incomeSources=(iSrc.data||[]).map(mapIncomeSource);
-    state.budget={income:settings.data?.budget_income||60000};
-    if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
-    const av=document.getElementById('userAvatar');
-    if(userFirstName&&av)av.textContent=userFirstName[0].toUpperCase();
-    saveCache();
-    render();
-    if(userRow)checkPaywall(userRow);
-  }catch(e){
-    console.error(e);
-    if(!hasCached){showToast('⚠️ Нет соединения — офлайн режим');loadLocalFallback();}
-  }
+async function syncFromSupabase(){
+  const[upsertRes,cats,txs,goals,settings,iSrc]=await Promise.all([
+    sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'}).select('*').single(),
+    sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
+    sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
+    sb.from('goals').select('*').eq('user_id',userId),
+    sb.from('user_settings').select('*').eq('user_id',userId).single(),
+    sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order')
+  ]);
+  const userRow=upsertRes.data;
+  if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
+  else{state.categories=mapCats(cats.data);}
+  state.transactions=(txs.data||[]).map(mapTx);
+  state.goals=(goals.data||[]).map(mapGoal);
+  state.incomeSources=(iSrc.data||[]).map(mapIncomeSource);
+  state.budget={income:settings.data?.budget_income||60000};
+  if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
+  const av=document.getElementById('userAvatar');
+  if(userFirstName&&av)av.textContent=userFirstName[0].toUpperCase();
+  saveCache();
+  render();
+  if(userRow)checkPaywall(userRow);
 }
 function mapCats(data){return data.map(c=>({id:c.id,name:c.name,icon:c.icon,color:c.color,limit:c.limit_amount}));}
 function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date,incomeSourceId:t.income_source_id||null};}
@@ -672,11 +658,17 @@ function initTilt(){
   });
 }
 
-async function init(){
-  await initUser();
+function init(){
+  const hasCached=loadCache();
+  // Hide loader and show UI immediately
   document.getElementById('loadingScreen').classList.add('hidden');
   render();
   initTilt();
+  // Sync Supabase in background — never blocks UI
+  syncFromSupabase().catch(e=>{
+    console.error(e);
+    if(!hasCached){loadLocalFallback();render();showToast('⚠️ Нет соединения');}
+  });
 }
 function loadLocalFallback(){
   try{const r=localStorage.getItem(`budget_v3_${userId}`);if(r){const d=JSON.parse(r);state={...state,...d};}}catch(e){}
