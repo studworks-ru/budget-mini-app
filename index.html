@@ -577,6 +577,57 @@ function isCurrentMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00'),n=new
 function isActiveMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00');return d.getMonth()===activeMonth&&d.getFullYear()===activeYear;}
 function setSyncing(v){document.getElementById('syncIndicator').classList.toggle('syncing',v);}
 
+
+function mapCats(data){return data.map(c=>({id:c.id,name:c.name,icon:c.icon,color:c.color,limit:c.limit_amount}));}
+function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date,incomeSourceId:t.income_source_id||null};}
+function mapGoal(g){return{id:g.id,name:g.name,icon:g.icon,target:Number(g.target_amount),saved:Number(g.saved_amount),type:g.type||'saving'};}
+function mapIncomeSource(s){return{id:s.id,name:s.name,icon:s.icon||'💰',expected:Number(s.expected_amount||0)};}
+
+async function createDefaultCategories(){
+  const d=[
+    {name:'Еда',icon:'🛒',color:'7DC4A0',limit_amount:12000,sort_order:0},
+    {name:'Транспорт',icon:'🚗',color:'B4A7D6',limit_amount:4000,sort_order:1},
+    {name:'Кафе',icon:'☕',color:'E8C4A0',limit_amount:5000,sort_order:2},
+    {name:'Квартира',icon:'🏠',color:'A7C4D6',limit_amount:25000,sort_order:3},
+    {name:'Здоровье',icon:'💊',color:'E8A0B0',limit_amount:3000,sort_order:4},
+    {name:'Прочее',icon:'📦',color:'C4C0BA',limit_amount:0,sort_order:5}
+  ];
+  await sb.from('categories').insert(d.map(x=>({...x,user_id:userId})));
+}
+
+async function saveSettings(){
+  const theme=document.getElementById('darkToggle').checked?'dark':'light';
+  await sb.from('user_settings').upsert({user_id:userId,budget_income:state.budget.income,theme,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+}
+
+function toggleFlipCard(){document.getElementById('flipCardWrap').classList.toggle('flipped');}
+function toggleIncomeCard(){document.getElementById('flipIncomeCardWrap').classList.toggle('flipped');}
+
+function renderIncomeSources(txM){
+  const incomeTx=(txM||[]).filter(t=>t.type==='income');
+  const el=document.getElementById('incomeSourcesList');
+  const back=document.getElementById('incomeCardBack');
+  if(!state.incomeSources||!state.incomeSources.length){
+    if(el)el.innerHTML='<div class="empty-state"><div class="ei">💰</div><p>Источников нет.<br>Нажми + чтобы добавить</p></div>';
+    if(back)back.innerHTML='<div style="font-size:10px;color:rgba(42,42,42,.4);text-align:center;padding-top:6px">нет источников</div>';
+    return;
+  }
+  if(back){
+    back.innerHTML=state.incomeSources.slice(0,3).map(s=>{
+      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
+      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
+      return '<div class="income-back-item"><span style="font-size:12px">'+s.icon+'</span><span style="flex:1;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(42,42,42,.75)">'+s.name+'</span><span style="font-size:10px;font-weight:800;color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</span></div><div class="income-back-bar"><div class="income-back-bar-fill" style="width:'+pct+'%"></div></div>';
+    }).join('');
+  }
+  if(el){
+    el.innerHTML=state.incomeSources.map(s=>{
+      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
+      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
+      return '<div class="cat-item" onclick="openIncomeSourceModal(''+s.id+'')"><div class="cat-icon" style="background:var(--green-light)">'+s.icon+'</div><div class="cat-info"><div class="cat-name">'+s.name+'</div><div class="cat-bar"><div class="cat-bar-fill" style="width:'+pct+'%;background:var(--green-dark)"></div></div></div><div class="cat-right"><div class="cat-spent" style="color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</div><div class="cat-limit">'+(s.expected?'план: '+s.expected.toLocaleString('ru-RU')+' ₽':'без плана')+'</div></div><div class="goal-contrib-btn" onclick="event.stopPropagation();openIncomeContribute(''+s.id+'')">+</div></div>';
+    }).join('');
+  }
+}
+
 async function initUser(){
   // Core queries — если упадут, покажем ошибку
   await sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'});
