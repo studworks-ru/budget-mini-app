@@ -343,9 +343,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
   <!-- ОБЗОР -->
   <div class="page active" id="page-home">
     <div class="stats-row">
-      <div class="flip-card-wrap" id="flipIncomeCardWrap">
+      <div class="flip-card-wrap" id="flipIncomeCardWrap" onclick="toggleIncomeCard()">
         <div class="flip-card-inner">
-          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);" data-tilt>
+          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
             <div class="stat-card-top">
               <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><ellipse cx="58" cy="52" rx="14" ry="7" fill="#e8c840" opacity=".7"/><ellipse cx="58" cy="49" rx="14" ry="7" fill="#f5d840"/><ellipse cx="58" cy="46" rx="14" ry="7" fill="#fce860"/><rect x="6" y="28" width="44" height="28" rx="4" fill="#7ab870" transform="rotate(-6,28,42)"/><rect x="8" y="26" width="44" height="28" rx="4" fill="#8cc87a" transform="rotate(-3,30,40)"/><rect x="10" y="24" width="44" height="28" rx="4" fill="#a0d88a"/><rect x="14" y="28" width="36" height="20" rx="2" fill="#8cc87a"/><ellipse cx="32" cy="38" rx="8" ry="8" fill="#a0d88a"/><ellipse cx="32" cy="38" rx="5" ry="5" fill="#8cc87a"/><text x="29" y="41" font-size="7" fill="#5a9a5a" font-weight="bold" font-family="sans-serif">$</text></svg></div>
               <div class="stat-sp">✦</div>
@@ -374,7 +374,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="stat-card-val" id="totalExpense">0 ₽</div>
         <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> этот месяц</div>
       </div>
-      <div class="flip-card-wrap" id="flipCardWrap">
+      <div class="flip-card-wrap" id="flipCardWrap" onclick="toggleFlipCard()">
         <div class="flip-card-inner">
           <div class="flip-card-front">
             <div class="stat-card-top">
@@ -578,24 +578,28 @@ function isActiveMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00');return
 function setSyncing(v){document.getElementById('syncIndicator').classList.toggle('syncing',v);}
 
 async function initUser(){
+  // Core queries — если упадут, покажем ошибку
   await sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'});
   const{data:userRow}=await sb.from('users').select('*').eq('id',userId).single();
-  const[cats,txs,goals,settings,iSrc]=await Promise.all([
+  const[cats,txs,goals,settings]=await Promise.all([
     sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
     sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
     sb.from('goals').select('*').eq('user_id',userId),
-    sb.from('user_settings').select('*').eq('user_id',userId).single(),
-    sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order')
+    sb.from('user_settings').select('*').eq('user_id',userId).single()
   ]);
   if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
   else{state.categories=mapCats(cats.data);}
   state.transactions=(txs.data||[]).map(mapTx);
   state.goals=(goals.data||[]).map(mapGoal);
-  state.incomeSources=(iSrc.data||[]).map(mapIncomeSource);
   state.budget={income:settings.data?.budget_income||60000};
   if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
   const av=document.getElementById('userAvatar');
   if(userFirstName&&av)av.textContent=userFirstName[0].toUpperCase();
+  // income_sources — отдельно, чтобы не ломать всё если таблица недоступна
+  try{
+    const iSrc=await sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order');
+    state.incomeSources=(iSrc.data||[]).map(mapIncomeSource);
+  }catch(e){state.incomeSources=[];console.warn('income_sources unavailable',e);}
   checkPaywall(userRow);
 }
 
@@ -615,8 +619,20 @@ function initTilt(){
 }
 
 async function init(){
+  if(typeof supabase==='undefined'){
+    console.error('Supabase не загружен');
+    loadLocalFallback();
+    document.getElementById('loadingScreen').style.display='none';
+    render();initTilt();
+    showToast('⚠️ Нет соединения');
+    return;
+  }
   try{await initUser();}
-  catch(e){console.error(e);showToast('⚠️ Нет соединения');loadLocalFallback();}
+  catch(e){
+    console.error('initUser error:',e);
+    showToast('⚠️ '+(e?.message||'Нет соединения'));
+    loadLocalFallback();
+  }
   document.getElementById('loadingScreen').style.display='none';
   render();
   initTilt();
