@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>motherlode</title>
 
-<link rel="preload" as="style" onload="this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#F0EDE6;--surface:#FAFAF7;--surface2:#F2F0ED;--border:#E0DDD4;
@@ -274,6 +274,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
 .paywall-cta{width:100%;background:var(--green-dark);border:none;border-radius:16px;padding:16px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:#fff;cursor:pointer;margin-bottom:12px;animation:pulse 2s ease-in-out infinite}
 .paywall-fine{font-size:11px;color:rgba(255,255,255,.4);text-align:center;line-height:1.5}
 </style>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -530,10 +532,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
   <div class="paywall-fine">Платёж обрабатывается через Lava.top</div>
 </div>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL='https://dtlhdghpeakgxttvbgov.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0bGhkZ2hwZWFrZ3h0dHZiZ292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzNTQsImV4cCI6MjA5NTgyODM1NH0.WJpR18AuDphI-21NrRLTx_UWAG5btvwWCzbpZ3LEtDY';
@@ -566,6 +564,9 @@ function toggleTheme(dark){applyTheme(dark);saveSettings();}
 
 let state={categories:[],transactions:[],goals:[],incomeSources:[],budget:{income:60000}};
 let donutChart=null,barChart=null;
+let chartJsLoaded=false,xlsxLoaded=false;
+function loadChartJs(cb){if(chartJsLoaded){cb();return;}const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';s.onload=()=>{chartJsLoaded=true;cb();};document.head.appendChild(s);}
+function loadXlsx(cb){if(xlsxLoaded){cb();return;}const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>{xlsxLoaded=true;cb();};document.head.appendChild(s);}
 let activeYear=new Date().getFullYear(),activeMonth=new Date().getMonth();
 
 function fmt(n){return Number(n).toLocaleString('ru-RU')+' ₽';}
@@ -659,29 +660,41 @@ function initTilt(){
   });
 }
 
-function init(){
-  const hasCached=loadCache();
-  initTilt();
+function hideLoader(){document.getElementById('loadingScreen').classList.add('hidden');}
 
-  if(hasCached){
-    // Есть кэш — показываем мгновенно, синк в фоне
-    document.getElementById('loadingScreen').classList.add('hidden');
-    render();
-    setSyncing(true);
-    syncFromSupabase().then(()=>{setSyncing(false);render();}).catch(()=>setSyncing(false));
-  } else {
-    // Нет кэша — ждём Supabase, но не дольше 4 сек
-    const hideLoader=()=>document.getElementById('loadingScreen').classList.add('hidden');
-    const fallbackTimer=setTimeout(()=>{
-      loadLocalFallback();hideLoader();render();
-    },4000);
-    syncFromSupabase().then(()=>{
-      clearTimeout(fallbackTimer);hideLoader();render();
-    }).catch(e=>{
-      clearTimeout(fallbackTimer);
-      loadLocalFallback();hideLoader();render();
-      showToast('⚠️ Нет соединения');
-    });
+function init(){
+  // Абсолютный таймаут — лоадер скроется через 6 сек при любом раскладе
+  const absoluteTimeout=setTimeout(()=>{hideLoader();render();},6000);
+
+  try{
+    const hasCached=loadCache();
+    initTilt();
+
+    if(hasCached){
+      clearTimeout(absoluteTimeout);
+      hideLoader();
+      render();
+      setSyncing(true);
+      syncFromSupabase().then(()=>{setSyncing(false);render();}).catch(()=>setSyncing(false));
+    } else {
+      const fallbackTimer=setTimeout(()=>{
+        clearTimeout(absoluteTimeout);
+        loadLocalFallback();hideLoader();render();
+      },4000);
+      syncFromSupabase().then(()=>{
+        clearTimeout(absoluteTimeout);clearTimeout(fallbackTimer);
+        hideLoader();render();
+      }).catch(e=>{
+        clearTimeout(absoluteTimeout);clearTimeout(fallbackTimer);
+        loadLocalFallback();hideLoader();render();
+        showToast('⚠️ Нет соединения');
+      });
+    }
+  }catch(e){
+    clearTimeout(absoluteTimeout);
+    console.error(e);
+    hideLoader();
+    showToast('❌ Ошибка запуска');
   }
 }
 function loadLocalFallback(){
@@ -731,6 +744,7 @@ function render(){
 }
 
 function renderDonut(txM){
+  if(typeof Chart==='undefined'){loadChartJs(()=>renderDonut(txM));return;}
   const expTx=txM.filter(t=>t.type==='expense');
   const total=expTx.reduce((s,t)=>s+t.amount,0);
   document.getElementById('donutTotal').textContent=fmt(total);
@@ -745,6 +759,7 @@ function renderDonut(txM){
 }
 
 function renderBar(){
+  if(typeof Chart==='undefined'){loadChartJs(()=>renderBar());return;}
   const months=[],incomes=[],expenses=[];
   for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const mn=d.getMonth(),yr=d.getFullYear();months.push(d.toLocaleDateString('ru-RU',{month:'short'}));const txM=state.transactions.filter(t=>{const td=new Date(t.date.slice(0,10)+'T12:00:00');return td.getMonth()===mn&&td.getFullYear()===yr;});incomes.push(txM.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));expenses.push(txM.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));}
   if(barChart)barChart.destroy();
@@ -994,7 +1009,7 @@ async function clearMonth(){
   }
 }
 
-function exportExcel(){try{const wb=XLSX.utils.book_new();const txRows=[['Дата','Тип','Категория','Описание','Сумма (₽)']];[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);txRows.push([fmtDate(t.date),t.type==='income'?'Доход':'Расход',cat?cat.name:'—',t.note||'',t.amount]);});const ws1=XLSX.utils.aoa_to_sheet(txRows);ws1['!cols']=[{wch:14},{wch:10},{wch:14},{wch:22},{wch:12}];XLSX.utils.book_append_sheet(wb,ws1,'Операции');const catRows=[['Категория','Потрачено (₽)','Лимит (₽)']];state.categories.forEach(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);catRows.push([cat.name,spent,cat.limit||'—']);});const ws2=XLSX.utils.aoa_to_sheet(catRows);XLSX.utils.book_append_sheet(wb,ws2,'Категории');const goalRows=[['Цель','Накоплено','Целевая сумма','%']];state.goals.forEach(g=>{goalRows.push([g.name,g.saved,g.target,g.target?Math.round(g.saved/g.target*100)+'%':'—']);});const ws3=XLSX.utils.aoa_to_sheet(goalRows);XLSX.utils.book_append_sheet(wb,ws3,'Цели');const wbout=XLSX.write(wb,{bookType:'xlsx',type:'base64'});const a=document.createElement('a');a.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+wbout;a.download=`бюджет_${new Date().toISOString().slice(0,10)}.xlsx`;document.body.appendChild(a);a.click();document.body.removeChild(a);showToast('📊 Excel скачан');}catch(e){showToast('❌ Ошибка: '+e.message);}}
+function exportExcel(){if(typeof XLSX==='undefined'){loadXlsx(()=>exportExcel());return;}try{const wb=XLSX.utils.book_new();const txRows=[['Дата','Тип','Категория','Описание','Сумма (₽)']];[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);txRows.push([fmtDate(t.date),t.type==='income'?'Доход':'Расход',cat?cat.name:'—',t.note||'',t.amount]);});const ws1=XLSX.utils.aoa_to_sheet(txRows);ws1['!cols']=[{wch:14},{wch:10},{wch:14},{wch:22},{wch:12}];XLSX.utils.book_append_sheet(wb,ws1,'Операции');const catRows=[['Категория','Потрачено (₽)','Лимит (₽)']];state.categories.forEach(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);catRows.push([cat.name,spent,cat.limit||'—']);});const ws2=XLSX.utils.aoa_to_sheet(catRows);XLSX.utils.book_append_sheet(wb,ws2,'Категории');const goalRows=[['Цель','Накоплено','Целевая сумма','%']];state.goals.forEach(g=>{goalRows.push([g.name,g.saved,g.target,g.target?Math.round(g.saved/g.target*100)+'%':'—']);});const ws3=XLSX.utils.aoa_to_sheet(goalRows);XLSX.utils.book_append_sheet(wb,ws3,'Цели');const wbout=XLSX.write(wb,{bookType:'xlsx',type:'base64'});const a=document.createElement('a');a.href='data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,'+wbout;a.download=`бюджет_${new Date().toISOString().slice(0,10)}.xlsx`;document.body.appendChild(a);a.click();document.body.removeChild(a);showToast('📊 Excel скачан');}catch(e){showToast('❌ Ошибка: '+e.message);}}
 function exportPDF(){const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);const balance=income-expense;const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});let html=`<div style="background:var(--surface2);border-radius:14px;padding:14px;margin-bottom:14px"><div style="font-size:11px;color:var(--muted);margin-bottom:8px">📅 ${dateStr}</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center"><div><div style="font-size:10px;color:var(--muted)">Доходы</div><div style="font-size:15px;font-weight:800;color:var(--green-dark)">+${Number(income).toLocaleString('ru-RU')} ₽</div></div><div><div style="font-size:10px;color:var(--muted)">Расходы</div><div style="font-size:15px;font-weight:800;color:#c07080">−${Number(expense).toLocaleString('ru-RU')} ₽</div></div><div><div style="font-size:10px;color:var(--muted)">Остаток</div><div style="font-size:15px;font-weight:800;color:${balance>=0?'var(--green-dark)':'#c07080'}">${balance>=0?'+':'−'}${Math.abs(balance).toLocaleString('ru-RU')} ₽</div></div></div></div>`;const catRows=state.categories.map(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);if(!spent)return'';const pct=expense?Math.round(spent/expense*100):0;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span>${cat.icon} ${cat.name}</span><span style="font-weight:700">${Number(spent).toLocaleString('ru-RU')} ₽ <span style="color:var(--muted);font-size:11px">${pct}%</span></span></div>`;}).join('');if(catRows){html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 6px">ПО КАТЕГОРИЯМ</div><div style="background:var(--surface2);border-radius:14px;padding:10px 14px;margin-bottom:14px">${catRows}</div>`;}const txRows=all.map(t=>{const cat=state.categories.find(c=>c.id===t.catId);const sign=t.type==='income'?'+':'−';const color=t.type==='income'?'var(--green-dark)':'#c07080';return`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${t.note||(cat?cat.name:'Операция')}</div><div style="font-size:10px;color:var(--muted)">${fmtDate(t.date)}${cat?' · '+cat.icon+cat.name:''}</div></div><div style="font-weight:700;color:${color};white-space:nowrap">${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽</div></div>`;}).join('');html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:12px 0 6px">ВСЕ ОПЕРАЦИИ</div><div style="background:var(--surface2);border-radius:14px;padding:10px 14px">${txRows||'<div style="color:var(--muted);text-align:center;padding:12px">нет операций</div>'}</div>`;document.getElementById('reportContent').innerHTML=html;openModal('reportModal');}
 function copyReport(){const all=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date));const income=state.transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);const expense=state.transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);const dateStr=new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});let text=`📊 Отчёт по бюджету\n${dateStr}\n\n💳 Доходы: +${Number(income).toLocaleString('ru-RU')} ₽\n🛍 Расходы: −${Number(expense).toLocaleString('ru-RU')} ₽\n📊 Остаток: ${income-expense>=0?'+':'−'}${Math.abs(income-expense).toLocaleString('ru-RU')} ₽\n\n── По категориям ──\n`;state.categories.forEach(cat=>{const spent=state.transactions.filter(t=>t.type==='expense'&&t.catId===cat.id).reduce((s,t)=>s+t.amount,0);if(spent)text+=`${cat.icon} ${cat.name}: ${Number(spent).toLocaleString('ru-RU')} ₽\n`;});text+=`\n── Операции ──\n`;all.forEach(t=>{const cat=state.categories.find(c=>c.id===t.catId);const sign=t.type==='income'?'+':'−';text+=`${fmtDate(t.date)} ${sign}${Number(t.amount).toLocaleString('ru-RU')} ₽ ${t.note||(cat?cat.name:'')}\n`;});navigator.clipboard.writeText(text).then(()=>showToast('📋 Скопировано!')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('📋 Скопировано!');}catch(e){showToast('⚠️ Не удалось');}document.body.removeChild(ta);});}
 
