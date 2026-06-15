@@ -1,3 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>motherlode</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F0EDE6;--surface:#FAFAF7;--surface2:#F2F0ED;--border:#E0DDD4;
+  --green:#7DC4A0;--green-light:#EAF5EE;--green-dark:#4a9a72;
+  --pink:#E8A0B0;--pink-light:#FDF0F3;
+  --purple:#B4A7D6;--purple-light:#F3F0FA;
+  --peach:#E8C4A0;--peach-light:#FDF5EE;
+  --text:#2a2a2a;--muted:#9A9490;--radius:18px;
+  --shadow:0 2px 12px rgba(0,0,0,0.06);
+  --toast-bg:#2a2a2a;--toast-text:#fff;
+}
+[data-theme="dark"] {
+  --bg:#0f1a10;--surface:#1a2e1c;--surface2:#1e3520;--border:#2a4a2e;
+  --green:#6BBF8E;--green-light:#1a3022;--green-dark:#4a8a62;
+  --pink:#C87A8E;--pink-light:#3a1e24;
+  --purple:#9A8BC2;--purple-light:#22183a;
+  --peach:#C4A07A;--peach-light:#3a2a18;
+  --text:#e8f5e9;--muted:#6a9a6e;
+  --shadow:0 2px 12px rgba(0,0,0,0.3);
+  --toast-bg:#e8f5e9;--toast-text:#1a2e1c;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;height:100%;display:flex;flex-direction:column;overflow:hidden;position:fixed;width:100%;top:0;left:0;max-width:420px;margin:0 auto;transition:background .3s,color .3s}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes sparkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,154,114,.4)}50%{box-shadow:0 0 0 10px rgba(74,154,114,0)}}
+.float{animation:float 3s ease-in-out infinite}
+
+/* ── CRYSTAL LOADER ── */
+.loading-screen{
+  position:fixed;inset:0;
+  background:#0A0E1A;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;gap:20px;
+}
+.loading-screen.hidden{display:none!important;}
+.loader-pb{
+  filter:drop-shadow(0 0 18px #00dd22) drop-shadow(0 0 40px rgba(0,200,40,.6));
+  animation:float 2.5s ease-in-out infinite;
+}
+.loader-text{font-size:13px;font-weight:700;color:rgba(255,255,255,.38);letter-spacing:1px;}
+
+/* ── FLIP CARD (savings/debt) ── */
+.flip-card-wrap{perspective:600px;border-radius:20px;cursor:pointer;}
+.flip-card-inner{
+  position:relative;width:100%;height:100%;min-height:118px;
+  transition:transform .5s cubic-bezier(.4,0,.2,1);
+  transform-style:preserve-3d;
+}
+.flip-card-wrap.flipped .flip-card-inner{transform:rotateY(180deg);}
+.flip-card-front,.flip-card-back{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:20px;padding:13px 14px;display:flex;flex-direction:column;min-height:118px;
+}
+.flip-card-front{background:linear-gradient(140deg,#f0ece4,#e4ddd0);}
+.flip-card-back{background:linear-gradient(140deg,#fde0e8,#f5c8d4);transform:rotateY(180deg);}
+.flip-hint{font-size:9px;color:rgba(42,42,42,.38);margin-top:auto;text-align:right;cursor:pointer;z-index:5;position:relative;}
+
+/* делаем дочерние элементы некликабельными */
+.flip-card-front > *:not(.flip-hint),
+.flip-card-back > *:not(.flip-hint) {
+  pointer-events: none;
+}
+
+/* ── GOAL CONTRIBUTE ── */
+.goal-contrib-btn{
+  width:28px;height:28px;border-radius:50%;background:var(--green-dark);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;cursor:pointer;font-weight:300;line-height:1;
+  flex-shrink:0;margin-left:auto;
+}
+.goal-type-toggle{display:flex;gap:8px;margin-bottom:14px;}
+.goal-type-btn{flex:1;padding:9px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;}
+.goal-type-btn.active-save{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+.goal-type-btn.active-debt{background:var(--pink-light);border-color:var(--pink);color:#c07080;}
+
+/* ── INCOME SOURCES BACK ── */
+.income-back-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:rgba(42,42,42,.75);margin-bottom:2px;}
+.income-back-bar{height:3px;background:rgba(74,154,114,.2);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.income-back-bar-fill{height:100%;border-radius:2px;background:var(--green-dark);}
+
+/* ── PARTICLES ── */
+#particles{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:particleRise linear infinite;}
+@keyframes particleRise{
+  0%  {opacity:0;transform:translateY(0) scale(.4);}
+  10% {opacity:.65;}
+  85% {opacity:.18;}
+  100%{opacity:0;transform:translateY(-300px) scale(.65);}
+}
+
+/* SYNC */
+.sync-indicator{position:fixed;top:max(12px,env(safe-area-inset-top));right:60px;width:8px;height:8px;border-radius:50%;background:var(--green);z-index:150;opacity:0;transition:opacity .3s}
+.sync-indicator.syncing{opacity:1;animation:pulse 1s ease-in-out infinite}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--toast-bg);color:var(--toast-text);border-radius:20px;padding:9px 18px;font-size:13px;font-weight:700;z-index:999;transition:transform .3s ease;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* HEADER */
+.header{padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);padding-top:max(12px,env(safe-area-inset-top));position:sticky;top:0;z-index:20}
+.header-month{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px}
+.header-title{font-size:22px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:-.5px}
+.header-sp{font-size:16px;color:var(--green);animation:sparkle 2s ease-in-out infinite}
+.header-pb{display:flex;align-items:center;gap:10px}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--green-light);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--green-dark);cursor:pointer;position:relative;flex-shrink:0}
+.avatar-badge{position:absolute;top:-2px;right:-2px;width:11px;height:11px;background:var(--pink);border-radius:50%;border:2px solid var(--surface)}
+
+.scroll-area{flex:1;overflow-y:scroll;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 14px;padding-bottom:calc(85px + env(safe-area-inset-bottom));position:relative;z-index:2;}
+.scroll-area::-webkit-scrollbar{display:none}
+
+.page{display:none}.page.active{display:block}
+
+/* ── STAT CARDS ── */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;margin-top:4px}
+.stat-card{
+  border-radius:20px;padding:13px 14px;display:flex;flex-direction:column;min-height:118px;
+  transition:transform .18s ease,box-shadow .18s ease;
+  cursor:pointer;
+}
+.stat-card.ic{background:linear-gradient(140deg,#d8f0e4,#c4e8d4)}
+.stat-card.ex{background:linear-gradient(140deg,#fde0e8,#f5c8d4)}
+.stat-card.sv{background:linear-gradient(140deg,#f0ece4,#e4ddd0)}
+.stat-card.bl{background:linear-gradient(140deg,#dceee8,#c8e4d8)}
+.stat-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.sticker{width:56px;height:48px;flex-shrink:0}.sticker svg{width:100%;height:100%}
+.stat-sp{font-size:12px;color:rgba(74,154,114,.7);animation:sparkle 2.5s ease-in-out infinite}
+.stat-sp.pk{color:rgba(192,112,128,.7)}
+.stat-card-label{font-size:11px;font-weight:700;color:rgba(42,42,42,.55);text-transform:lowercase;margin-bottom:2px}
+.stat-card-val{font-size:20px;font-weight:900;color:var(--text);letter-spacing:-.5px;line-height:1.1;margin-bottom:2px}
+.stat-card-sub{font-size:10px;font-weight:700;display:flex;align-items:center;gap:3px}
+.sub-gr{color:var(--green-dark)}.sub-pk{color:#c07080}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.donut-card{background:var(--surface);border-radius:20px;padding:13px 14px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.donut-card-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.chart-sp{font-size:12px;color:rgba(74,154,114,.6);animation:sparkle 2s ease-in-out infinite}
+.donut-wrap{position:relative;height:100px;display:flex;align-items:center;justify-content:center}
+.donut-center{position:absolute;text-align:center;pointer-events:none}
+.donut-center-val{font-size:13px;font-weight:900;color:var(--text)}
+.donut-center-label{font-size:9px;color:var(--muted);font-weight:600}
+.donut-legend{margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-pct{margin-left:auto;color:var(--muted)}
+.bar-chart-wrap{height:90px;position:relative;margin-top:6px;overflow:hidden}
+
+.section{margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:16px;font-weight:900;color:var(--text)}
+.btn-add{width:30px;height:30px;border-radius:50%;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;cursor:pointer;font-weight:300;line-height:1}
+
+.cat-item{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px;box-shadow:var(--shadow)}
+.cat-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-size:13px;font-weight:700;margin-bottom:5px}
+.cat-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.cat-right{text-align:right;flex-shrink:0}
+.cat-spent{font-size:13px;font-weight:800;color:var(--text)}
+.cat-limit{font-size:10px;color:var(--muted);margin-top:1px}
+.cat-pb{width:11px;height:13px;flex-shrink:0;margin-left:4px}.cat-pb svg{width:100%;height:100%}
+
+.goal-item{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;cursor:pointer;margin-bottom:8px;box-shadow:var(--shadow)}
+.goal-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.goal-icon{font-size:24px}.goal-name{font-size:13px;font-weight:800;flex:1}
+.goal-pct{font-size:12px;font-weight:800;color:var(--green-dark)}
+.goal-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:7px}
+.goal-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#a8dfc0)}
+.goal-amounts{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.goal-amounts strong{color:var(--text);font-weight:700}
+
+.tx-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.tx-item:last-child{border-bottom:none}
+.tx-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-name{font-size:13px;font-weight:700}
+.tx-date{font-size:10px;color:var(--muted);margin-top:1px}
+.tx-amount{font-size:14px;font-weight:800}
+.tx-income{color:var(--green-dark)}.tx-expense{color:#c07080}
+.tx-list-card{background:var(--surface);border-radius:16px;padding:4px 14px;border:1px solid var(--border);box-shadow:var(--shadow)}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:100;max-width:420px;margin:0 auto}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 0;color:var(--muted);font-size:10px;font-weight:700}
+.nav-item.active{color:var(--green-dark)}.nav-icon{font-size:22px}
+
+.fab{position:fixed;bottom:calc(68px + env(safe-area-inset-bottom));right:18px;width:52px;height:52px;border-radius:16px;background:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;cursor:pointer;box-shadow:0 4px 18px rgba(74,154,114,.5);z-index:99;font-weight:300;line-height:1;transition:transform .15s}
+.fab:active{transform:scale(.9)}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:20px 18px;padding-bottom:max(24px,env(safe-area-inset-bottom));width:100%;max-width:420px;margin:0 auto;max-height:90vh;overflow-y:auto;animation:slideUp .28s ease}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+.modal-title{font-size:17px;font-weight:900;margin-bottom:18px}
+.form-group{margin-bottom:13px}
+.form-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;display:block}
+.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:11px 13px;font-size:15px;font-weight:600;color:var(--text);font-family:'Nunito',sans-serif;outline:none}
+.form-input:focus{border-color:var(--green)}
+.form-input::placeholder{color:var(--muted);font-weight:500}
+.type-toggle{display:flex;gap:8px;margin-bottom:14px}
+.type-btn{flex:1;padding:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif}
+.type-btn.active-income{background:var(--green-light);border-color:var(--green);color:var(--green-dark)}
+.type-btn.active-expense{background:var(--pink-light);border-color:var(--pink);color:#c07080}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;margin-top:6px}
+.emoji-btn{aspect-ratio:1;background:var(--surface2);border:1.5px solid transparent;border-radius:10px;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.emoji-btn.selected{border-color:var(--green);background:var(--green-light)}
+.color-grid{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+.color-btn{width:34px;height:34px;border-radius:50%;border:2.5px solid transparent;cursor:pointer}
+.color-btn.selected{border-color:var(--text)}
+.cat-select-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cat-select-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:9px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:10px;font-weight:600;color:var(--muted);text-align:center}
+.cat-select-item .ci{font-size:20px}
+.cat-select-item.selected{border-color:var(--green);background:var(--green-light);color:var(--text)}
+.btn-primary{width:100%;background:var(--green-dark);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;font-family:'Nunito',sans-serif;margin-top:4px}
+.btn-danger{width:100%;background:var(--pink-light);border:1px solid var(--pink);border-radius:14px;padding:12px;font-size:14px;font-weight:700;color:#c07080;cursor:pointer;font-family:'Nunito',sans-serif;margin-top:8px}
+
+.settings-item{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow)}
+.settings-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.settings-label{flex:1;font-size:13px;font-weight:700}
+.settings-arrow{color:var(--muted);font-size:17px}
+.toggle-switch{position:relative;width:44px;height:26px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:13px;cursor:pointer;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.toggle-slider{background:var(--green)}
+input:checked+.toggle-slider:before{transform:translateX(18px)}
+
+.month-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.month-item{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:13px 12px;cursor:pointer}
+.month-item.active-month{background:var(--green-light);border-color:var(--green)}
+.month-item-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:5px}
+.month-item.active-month .month-item-name{color:var(--green-dark)}
+.month-item-inc{font-size:11px;font-weight:600;color:var(--green-dark)}
+.month-item-exp{font-size:11px;font-weight:600;color:#c07080;margin-top:1px}
+
+.empty-state{text-align:center;padding:32px 20px;color:var(--muted)}
+.empty-state .ei{font-size:36px;margin-bottom:10px}
+.empty-state p{font-size:13px;line-height:1.6}
+
+.report-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.btn-copy{background:var(--green-dark);border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:'Nunito',sans-serif}
+
+.paywall{display:none;position:fixed;inset:0;z-index:5000;background:linear-gradient(160deg,#0f1f17 0%,#0a1a10 100%);flex-direction:column;align-items:center;overflow-y:auto;padding:0 20px 40px;padding-top:max(50px,env(safe-area-inset-top))}
+.paywall.show{display:flex}
+.pw-pb{margin-bottom:16px}
+.paywall-title{font-size:26px;font-weight:900;color:#fff;text-align:center;margin-bottom:8px;line-height:1.2}
+.paywall-title span{color:#57ff6e}
+.paywall-sub{font-size:14px;color:rgba(255,255,255,.6);text-align:center;margin-bottom:20px;line-height:1.5}
+.pw-trial-badge{background:var(--green-dark);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;box-shadow:0 4px 20px rgba(74,154,114,.45);width:100%}
+.pw-trial-badge-icon{font-size:26px;flex-shrink:0}
+.pw-trial-title{font-size:14px;font-weight:900;color:#fff;margin-bottom:2px}
+.pw-trial-sub{font-size:11px;color:rgba(255,255,255,.7);font-weight:600}
+.paywall-features{width:100%;margin-bottom:20px}
+.paywall-feature{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;color:rgba(255,255,255,.85);font-weight:600}
+.paywall-feature:last-child{border-bottom:none}
+.paywall-feature-icon{font-size:18px;flex-shrink:0;width:28px;height:28px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.paywall-plans{width:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.plan-card{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .2s;position:relative}
+.plan-card:active{transform:scale(.98)}
+.plan-card.popular{background:rgba(74,154,114,.18);border-color:var(--green)}
+.plan-card-left{display:flex;flex-direction:column;gap:2px}
+.plan-name{font-size:15px;font-weight:800;color:#fff}
+.plan-economy{font-size:11px;color:var(--green);font-weight:600}
+.plan-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.plan-price{font-size:19px;font-weight:900;color:#fff}
+.plan-per{font-size:11px;color:rgba(255,255,255,.5)}
+.popular-badge{background:var(--green-dark);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;margin-bottom:3px;text-align:center;display:inline-block}
+.paywall-cta{width:100%;background:var(--green-dark);border:none;border-radius:16px;padding:16px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;color:#fff;cursor:pointer;margin-bottom:12px;animation:pulse 2s ease-in-out infinite}
+.paywall-fine{font-size:11px;color:rgba(255,255,255,.4);text-align:center;line-height:1.5}
+</style>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- PLUMBOB SVG -->
+<svg width="0" height="0" style="position:absolute">
+<defs><symbol id="pb" viewBox="0 0 160 200">
+<defs>
+<radialGradient id="pg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#40ff50" stop-opacity=".7"/><stop offset="100%" stop-color="#40ff50" stop-opacity="0"/></radialGradient>
+<filter id="psh"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#00aa00" flood-opacity=".35"/></filter>
+</defs>
+<ellipse cx="80" cy="178" rx="36" ry="9" fill="url(#pg)"/>
+<g filter="url(#psh)">
+<polygon points="80,18 44,88 68,75" fill="#1aaa22" opacity=".95"/>
+<polygon points="80,18 68,75 80,82 62,90" fill="#9ee850" opacity=".95"/>
+<polygon points="80,25 86,60 78,55 76,30" fill="#e8ff90" opacity=".55"/>
+<polygon points="80,18 80,82 96,72" fill="#50d858" opacity=".98"/>
+<polygon points="80,20 83,50 90,44 86,22" fill="#c8ff70" opacity=".4"/>
+<polygon points="80,18 96,72 112,84" fill="#28b030" opacity=".95"/>
+<polygon points="80,18 112,84 120,90" fill="#0e8818" opacity=".9"/>
+<polygon points="44,88 62,90 80,82 68,75" fill="#28c030" opacity=".92"/>
+<polygon points="62,90 80,102 80,82" fill="#22b828" opacity=".88"/>
+<polygon points="80,82 80,102 96,72" fill="#1a9820" opacity=".85"/>
+<polygon points="96,72 80,102 112,84 120,90" fill="#16881c" opacity=".9"/>
+<polygon points="44,88 80,102 80,168" fill="#1aaa22" opacity=".95"/>
+<polygon points="62,90 80,168 80,102" fill="#20b828" opacity=".88"/>
+<polygon points="80,102 80,168 96,95" fill="#147018" opacity=".85"/>
+<polygon points="80,102 96,95 120,90 80,168" fill="#0e5c12" opacity=".92"/>
+<polygon points="44,88 68,75 80,18" fill="#0a5010" opacity=".45"/>
+</g>
+<g transform="translate(28,48)"><path d="M0,-9 L1.5,-1.5 L9,0 L1.5,1.5 L0,9 L-1.5,1.5 L-9,0 L-1.5,-1.5 Z" fill="#38e840" opacity=".9"/></g>
+<g transform="translate(130,34)"><path d="M0,-7 L1.2,-1.2 L7,0 L1.2,1.2 L0,7 L-1.2,1.2 L-7,0 L-1.2,-1.2 Z" fill="#38e840" opacity=".85"/></g>
+<g transform="translate(20,112)"><path d="M0,-6 L1,-1 L6,0 L1,1 L0,6 L-1,1 L-6,0 L-1,-1 Z" fill="#28d030" opacity=".8"/></g>
+<g transform="translate(142,74)"><path d="M0,-5 L.8,-.8 L5,0 L.8,.8 L0,5 L-.8,.8 L-5,0 L-.8,-.8 Z" fill="#28d030" opacity=".75"/></g>
+<g transform="translate(136,134)"><path d="M0,-6 L1,-1 L6,0 L1,1 L0,6 L-1,1 L-6,0 L-1,-1 Z" fill="#30d838" opacity=".8"/></g>
+</symbol></defs>
+</svg>
+
+<!-- LOADER -->
+<div class="loading-screen" id="loadingScreen">
+  <svg class="loader-pb" width="80" height="100"><use href="#pb"/></svg>
+  <div class="loader-text">загружаем motherlode…</div>
+</div>
+
+<!-- PARTICLES -->
+<div id="particles"></div>
+
+<div class="sync-indicator" id="syncIndicator"></div>
+<div class="toast" id="toast">✅ Сохранено</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-month" id="currentMonth">Июнь 2026</div>
+    <div class="header-title">обзор <span class="header-sp">✦</span></div>
+  </div>
+  <div class="header-pb">
+    <svg width="22" height="28" class="float"><use href="#pb"/></svg>
+    <div class="avatar" id="userAvatar" onclick="openMonthPicker()">📅<div class="avatar-badge"></div></div>
+  </div>
+</div>
+
+<!-- SCROLL AREA -->
+<div class="scroll-area" id="scrollArea">
+
+  <!-- ОБЗОР -->
+  <div class="page active" id="page-home">
+    <div class="stats-row">
+      <div class="flip-card-wrap" id="flipIncomeCardWrap" onclick="toggleIncomeCard()">
+        <div class="flip-card-inner">
+          <div class="flip-card-front" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><ellipse cx="58" cy="52" rx="14" ry="7" fill="#e8c840" opacity=".7"/><ellipse cx="58" cy="49" rx="14" ry="7" fill="#f5d840"/><ellipse cx="58" cy="46" rx="14" ry="7" fill="#fce860"/><rect x="6" y="28" width="44" height="28" rx="4" fill="#7ab870" transform="rotate(-6,28,42)"/><rect x="8" y="26" width="44" height="28" rx="4" fill="#8cc87a" transform="rotate(-3,30,40)"/><rect x="10" y="24" width="44" height="28" rx="4" fill="#a0d88a"/><rect x="14" y="28" width="36" height="20" rx="2" fill="#8cc87a"/><ellipse cx="32" cy="38" rx="8" ry="8" fill="#a0d88a"/><ellipse cx="32" cy="38" rx="5" ry="5" fill="#8cc87a"/><text x="29" y="41" font-size="7" fill="#5a9a5a" font-weight="bold" font-family="sans-serif">$</text></svg></div>
+              <div class="stat-sp">✦</div>
+            </div>
+            <div class="stat-card-label">доходы</div>
+            <div class="stat-card-val" id="totalIncome">0 ₽</div>
+            <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> этот месяц</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleIncomeCard()">↻ источники</div>
+          </div>
+          <div class="flip-card-back" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
+            <div style="font-size:11px;font-weight:700;color:rgba(42,42,42,.55);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+              источники
+              <span style="font-size:20px;cursor:pointer;color:var(--green-dark);font-weight:300;line-height:1;" onclick="event.stopPropagation();openIncomeSourceModal()">+</span>
+            </div>
+            <div id="incomeCardBack" style="flex:1;overflow:hidden;"></div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleIncomeCard()">↻ доходы</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card ex">
+        <div class="stat-card-top">
+          <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><rect x="38" y="24" width="28" height="32" rx="4" fill="#f5d840"/><rect x="43" y="14" width="4" height="13" rx="2" fill="#c8a820"/><rect x="57" y="14" width="4" height="13" rx="2" fill="#c8a820"/><path d="M43 14 Q52 8 64 14" stroke="#c8a820" stroke-width="2.5" fill="none" stroke-linecap="round"/><rect x="12" y="22" width="32" height="36" rx="4" fill="#f07090"/><rect x="18" y="10" width="4" height="15" rx="2" fill="#c04060"/><rect x="30" y="10" width="4" height="15" rx="2" fill="#c04060"/><path d="M18 10 Q28 4 34 10" stroke="#c04060" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+          <div class="stat-sp pk">✦</div>
+        </div>
+        <div class="stat-card-label">расходы</div>
+        <div class="stat-card-val" id="totalExpense">0 ₽</div>
+        <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> этот месяц</div>
+      </div>
+      <div class="flip-card-wrap" id="flipCardWrap" onclick="toggleFlipCard()">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><circle cx="34" cy="42" r="24" fill="#e05050"/><circle cx="34" cy="42" r="18" fill="#f5f5f5"/><circle cx="34" cy="42" r="12" fill="#e05050"/><circle cx="34" cy="42" r="6" fill="#f5f5f5"/><circle cx="34" cy="42" r="3" fill="#e05050"/><line x1="62" y1="14" x2="36" y2="40" stroke="#8B4513" stroke-width="3" stroke-linecap="round"/><polygon points="36,40 30,34 40,32" fill="#c0c0c0"/><polygon points="62,14 68,10 66,18" fill="#4a90d0"/></svg></div>
+              <div class="stat-sp">✦</div>
+            </div>
+            <div class="stat-card-label">накопления</div>
+            <div class="stat-card-val" id="totalSaved">0 ₽</div>
+            <div class="stat-card-sub sub-gr"><svg width="9" height="11" class="float"><use href="#pb"/></svg> по целям</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleFlipCard()">↻ долги</div>
+          </div>
+          <div class="flip-card-back">
+            <div class="stat-card-top">
+              <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><rect x="10" y="20" width="50" height="34" rx="6" fill="#f07090"/><rect x="10" y="28" width="50" height="8" fill="#c04060" opacity=".4"/><rect x="16" y="36" width="14" height="4" rx="2" fill="#fff" opacity=".7"/><circle cx="56" cy="38" r="5" fill="#fff" opacity=".5"/></svg></div>
+              <div class="stat-sp pk">✦</div>
+            </div>
+            <div class="stat-card-label">долги</div>
+            <div class="stat-card-val" id="totalDebt">0 ₽</div>
+            <div class="stat-card-sub sub-pk"><svg width="9" height="11"><use href="#pb"/></svg> осталось</div>
+            <div class="flip-hint" onclick="event.stopPropagation();toggleFlipCard()">↻ накопления</div>
+          </div>
+        </div>
+      </div>
+      <div class="stat-card bl">
+        <div class="stat-card-top">
+          <div class="sticker"><svg viewBox="0 0 80 70" fill="none"><line x1="12" y1="58" x2="68" y2="58" stroke="#a0c8b8" stroke-width="2"/><line x1="12" y1="14" x2="12" y2="58" stroke="#a0c8b8" stroke-width="2"/><rect x="18" y="30" width="12" height="28" rx="3" fill="#4caf80"/><rect x="34" y="22" width="12" height="36" rx="3" fill="#5bbf90"/><rect x="50" y="36" width="12" height="22" rx="3" fill="#81c8a8"/><rect x="19" y="31" width="4" height="6" rx="1" fill="#80e0b8" opacity=".6"/><rect x="35" y="23" width="4" height="6" rx="1" fill="#80e0b8" opacity=".6"/></svg></div>
+          <div class="stat-sp">✦</div>
+        </div>
+        <div class="stat-card-label">остаток</div>
+        <div class="stat-card-val" id="balanceCard">0 ₽</div>
+        <div class="stat-card-sub" id="balanceSub" style="color:var(--green-dark)"><svg width="9" height="11" class="float"><use href="#pb"/></svg> профицит</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="donut-card">
+        <div class="donut-card-title">структура трат <span class="chart-sp">✦</span></div>
+        <div class="donut-wrap">
+          <canvas id="donutChart" width="100" height="100"></canvas>
+          <div class="donut-center">
+            <div class="donut-center-val" id="donutTotal">0 ₽</div>
+            <div class="donut-center-label">всего</div>
+          </div>
+        </div>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+      <div class="donut-card">
+        <div class="donut-card-title">динамика <span class="chart-sp">✦</span></div>
+        <div class="bar-chart-wrap"><canvas id="barChart"></canvas></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center">доходы vs расходы</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">категории</div>
+        <div class="btn-add" onclick="openCatModal()">+</div>
+      </div>
+      <div id="categoryList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">источники дохода</div>
+        <div class="btn-add" onclick="openIncomeSourceModal()">+</div>
+      </div>
+      <div id="incomeSourcesList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><div class="section-title">последние операции</div></div>
+      <div class="tx-list-card"><div id="recentTx"></div></div>
+    </div>
+  </div>
+
+  <!-- ОПЕРАЦИИ -->
+  <div class="page" id="page-tx">
+    <div class="section" style="margin-top:8px">
+      <div class="section-header"><div class="section-title">все операции</div></div>
+      <div class="tx-list-card"><div id="allTxList"></div></div>
+    </div>
+  </div>
+
+  <!-- ЦЕЛИ -->
+  <div class="page" id="page-goals">
+    <div class="section" style="margin-top:8px">
+      <div class="section-header">
+        <div class="section-title">финансовые цели</div>
+        <div class="btn-add" onclick="openGoalModal()">+</div>
+      </div>
+      <div id="goalsList"></div>
+    </div>
+  </div>
+
+  <!-- НАСТРОЙКИ -->
+  <div class="page" id="page-settings">
+    <div class="section" style="margin-top:8px">
+      <div class="settings-item"><div class="settings-icon" style="background:var(--purple-light)">🌙</div><div class="settings-label">тёмная тема</div><label class="toggle-switch"><input type="checkbox" id="darkToggle" onchange="toggleTheme(this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="settings-item" onclick="openBudgetSettings()"><div class="settings-icon" style="background:var(--green-light)">💰</div><div class="settings-label">плановый бюджет</div><div class="settings-arrow">›</div></div>
+      <div class="settings-item" onclick="openCatModal()"><div class="settings-icon" style="background:var(--purple-light)">🏷️</div><div class="settings-label">управление категориями</div><div class="settings-arrow">›</div></div>
+      <div class="settings-item" onclick="exportExcel()"><div class="settings-icon" style="background:var(--green-light)">📊</div><div class="settings-label">экспорт в Excel (.xlsx)</div><div class="settings-arrow">›</div></div>
+      <div class="settings-item" onclick="exportPDF()"><div class="settings-icon" style="background:var(--peach-light)">📄</div><div class="settings-label">отчёт / PDF</div><div class="settings-arrow">›</div></div>
+      <div class="settings-item" onclick="clearMonth()"><div class="settings-icon" style="background:var(--pink-light)">🗑️</div><div class="settings-label">сбросить текущий месяц</div><div class="settings-arrow">›</div></div>
+      <div style="margin-top:16px;padding:12px 14px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--muted);text-align:center">
+        <svg width="12" height="15" style="vertical-align:middle;margin-right:4px"><use href="#pb"/></svg>
+        Данные синхронизируются через Supabase
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<div class="fab" id="fab">+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchPage('home',this)"><div class="nav-icon">🏠</div>обзор</div>
+  <div class="nav-item" onclick="switchPage('tx',this)"><div class="nav-icon">📋</div>операции</div>
+  <div class="nav-item" onclick="switchPage('goals',this)"><div class="nav-icon">🎯</div>цели</div>
+  <div class="nav-item" onclick="switchPage('settings',this)"><div class="nav-icon">⚙️</div>настройки</div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="monthModal" onclick="closeModal('monthModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">история по месяцам</div><div class="month-grid" id="monthGrid"></div></div></div>
+<div class="modal-overlay" id="txModal" onclick="closeModal('txModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="txModalTitle">новая операция</div><div class="type-toggle"><div class="type-btn active-expense" id="typeBtnExpense" onclick="setType('expense')">— расход</div><div class="type-btn" id="typeBtnIncome" onclick="setType('income')">+ доход</div></div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="txAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Описание</label><input class="form-input" id="txNote" type="text" placeholder="За что?"></div><div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="txDate" type="date"></div><div class="form-group" id="catSelectGroup"><label class="form-label">Категория</label><div class="cat-select-grid" id="catSelectGrid"></div></div><button class="btn-primary" onclick="saveTx()">Сохранить</button><button class="btn-danger" id="deleteTxBtn" onclick="deleteTx()" style="display:none">Удалить операцию</button></div></div>
+<div class="modal-overlay" id="catModal" onclick="closeModal('catModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="catModalTitle">новая категория</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="catName" type="text" placeholder="Продукты, транспорт..."></div><div class="form-group"><label class="form-label">Лимит в месяц (₽)</label><input class="form-input" id="catLimit" type="number" placeholder="необязательно"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="emojiGrid"></div></div><div class="form-group"><label class="form-label">Цвет</label><div class="color-grid" id="colorGrid"></div></div><button class="btn-primary" onclick="saveCat()">Сохранить</button><button class="btn-danger" id="deleteCatBtn" onclick="deleteCat()" style="display:none">Удалить категорию</button></div></div>
+<div class="modal-overlay" id="goalModal" onclick="closeModal('goalModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="goalModalTitle">новая цель</div><div class="goal-type-toggle"><div class="goal-type-btn active-save" id="goalTypeSave" onclick="setGoalType('saving')">🎯 Накопление</div><div class="goal-type-btn" id="goalTypeDebt" onclick="setGoalType('debt')">💳 Долг</div></div>
+    <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="goalName" type="text" placeholder="Отпуск, телефон..."></div><div class="form-group"><label class="form-label">Целевая сумма (₽)</label><input class="form-input" id="goalTarget" type="number" placeholder="50000"></div><div class="form-group"><label class="form-label">Уже накоплено (₽)</label><input class="form-input" id="goalSaved" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="goalEmojiGrid"></div></div><button class="btn-primary" onclick="saveGoal()">Сохранить</button><button class="btn-danger" id="deleteGoalBtn" onclick="deleteGoal()" style="display:none">Удалить цель</button></div></div>
+<div class="modal-overlay" id="contributeModal" onclick="closeModal('contributeModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="contributeTitle">+ добавить к цели</div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="contributeAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Заметка</label><input class="form-input" id="contributeNote" type="text" placeholder="необязательно"></div><button class="btn-primary" onclick="saveContribute()">Добавить</button></div></div>
+<div class="modal-overlay" id="incomeSourceModal" onclick="closeModal('incomeSourceModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="isModalTitle">новый источник</div><div class="form-group"><label class="form-label">Название</label><input class="form-input" id="isName" type="text" placeholder="Зарплата, фриланс..."></div><div class="form-group"><label class="form-label">Плановая сумма (₽)</label><input class="form-input" id="isExpected" type="number" placeholder="100000"></div><div class="form-group"><label class="form-label">Иконка</label><div class="emoji-grid" id="isEmojiGrid"></div></div><button class="btn-primary" onclick="saveIncomeSource()">Сохранить</button><button class="btn-danger" id="deleteIsBtn" onclick="deleteIncomeSource()" style="display:none">Удалить источник</button></div></div>
+<div class="modal-overlay" id="incomeContributeModal" onclick="closeModal('incomeContributeModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title" id="icTitle">+ записать доход</div><div class="form-group"><label class="form-label">Сумма (₽)</label><input class="form-input" id="icAmount" type="number" placeholder="0" inputmode="decimal"></div><div class="form-group"><label class="form-label">Дата</label><input class="form-input" id="icDate" type="date"></div><button class="btn-primary" onclick="saveIncomeContribute()">Добавить</button></div></div>
+<div class="modal-overlay" id="budgetModal" onclick="closeModal('budgetModal')"><div class="modal" onclick="event.stopPropagation()"><div class="modal-handle"></div><div class="modal-title">бюджет месяца</div><div class="form-group"><label class="form-label">Плановый доход (₽)</label><input class="form-input" id="budgetIncome" type="number" placeholder="60000"></div><button class="btn-primary" onclick="saveBudget()">Сохранить</button></div></div>
+<div class="modal-overlay" id="reportModal" onclick="closeModal('reportModal')"><div class="modal" onclick="event.stopPropagation()" style="max-height:92vh"><div class="modal-handle"></div><div class="report-modal-header"><div class="modal-title" style="margin-bottom:0">📊 Отчёт</div><button class="btn-copy" onclick="copyReport()">📋 Скопировать</button></div><div id="reportContent" style="font-size:13px;line-height:1.7;color:var(--text)"></div><div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:12px;font-size:11px;color:var(--muted);text-align:center">С ноута: скопируй → вставь в Word/Google Docs → сохрани как PDF</div></div></div>
+
+<!-- PAYWALL -->
+<div class="paywall" id="paywall">
+  <div class="pw-pb"><svg width="90" height="112" class="float"><use href="#pb"/></svg></div>
+  <div class="paywall-title">motherlode <span>Premium</span></div>
+  <div class="paywall-sub">Твой пробный период закончился.<br>Продолжи — и больше никаких сюрпризов к концу месяца.</div>
+  <div class="pw-trial-badge"><div class="pw-trial-badge-icon">🎁</div><div><div class="pw-trial-title">Выбери тариф и продолжи</div><div class="pw-trial-sub">Отмена в любой момент в настройках</div></div></div>
+  <div class="paywall-features">
+    <div class="paywall-feature"><div class="paywall-feature-icon">📊</div>Полная история всех операций</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">🎯</div>Финансовые цели и накопления</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">📈</div>Аналитика и графики по месяцам</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">📋</div>Экспорт в Excel и отчёты</div>
+    <div class="paywall-feature"><div class="paywall-feature-icon">☁️</div>Данные сохраняются на всех устройствах</div>
+  </div>
+  <div class="paywall-plans">
+    <div class="plan-card" onclick="openPayment('month')"><div class="plan-card-left"><div class="plan-name">1 месяц</div><div class="plan-economy" style="color:rgba(255,255,255,.4)">Попробуй</div></div><div class="plan-right"><div class="plan-price">249 ₽</div><div class="plan-per">в месяц</div></div></div>
+    <div class="plan-card popular" onclick="openPayment('3months')"><div class="plan-card-left"><div class="popular-badge">🔥 ВЫГОДНЕЕ</div><div class="plan-name">3 месяца</div><div class="plan-economy">Экономия 198 ₽</div></div><div class="plan-right"><div class="plan-price">549 ₽</div><div class="plan-per">183 ₽/мес</div></div></div>
+    <div class="plan-card" onclick="openPayment('6months')"><div class="plan-card-left"><div class="plan-name">6 месяцев</div><div class="plan-economy">Экономия 645 ₽</div></div><div class="plan-right"><div class="plan-price">849 ₽</div><div class="plan-per">142 ₽/мес</div></div></div>
+    <div class="plan-card" onclick="openPayment('year')"><div class="plan-card-left"><div class="plan-name">1 год</div><div class="plan-economy">Экономия 1 499 ₽</div></div><div class="plan-right"><div class="plan-price">1 490 ₽</div><div class="plan-per">124 ₽/мес</div></div></div>
+  </div>
+  <div class="paywall-fine">Платёж обрабатывается через Lava.top</div>
+</div>
+
 <script>
 const SUPABASE_URL='https://dtlhdghpeakgxttvbgov.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0bGhkZ2hwZWFrZ3h0dHZiZ292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTIzNTQsImV4cCI6MjA5NTgyODM1NH0.WJpR18AuDphI-21NrRLTx_UWAG5btvwWCzbpZ3LEtDY';
@@ -103,6 +641,14 @@ function switchPage(page,el){
 // ── MODALS ──
 function openModal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
 function closeModal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+
+// ── PAYMENT STUB ──
+function openPayment(plan){
+  const prices={month:249,'3months':549,'6months':849,year:1490};
+  const url='https://lava.top/'; // замени на свою ссылку
+  toast('💳 Перенаправляю на оплату...');
+  setTimeout(()=>{window.open(url,'_blank');},500);
+}
 
 // ── MONTH PICKER ──
 function openMonthPicker(){
@@ -826,40 +1372,69 @@ function renderAll(){
 
 // ── INIT ──
 async function initApp(){
+  // Защита: если за 8 секунд не загрузилось — скрываем лоадер принудительно
+  const timeout = setTimeout(() => {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    console.error('⏰ Timeout: загрузка прервана');
+    toast('⚠️ Сервер не отвечает. Локальный режим');
+    updateHeader();
+    renderAll();
+  }, 8000);
+
   try{
     setSyncing(true);
+    
     // Load settings
-    const {data:settings}=await sb.from('user_settings').select('*').eq('user_id',userId).maybeSingle();
+    const {data:settings, error:settingsError} = await sb.from('user_settings').select('*').eq('user_id',userId).maybeSingle();
+    if(settingsError) console.warn('settings error:', settingsError);
     if(settings){
       state.budget.income=settings.budget_income||60000;
       if(settings.theme)applyTheme(settings.theme==='dark');
     }
     
     // Load categories
-    const {data:cats}=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');
-    if(cats&&cats.length)state.categories=mapCats(cats);
-    else{await createDefaultCategories();const {data:newCats}=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(newCats||[]);}
+    const {data:cats, error:catsError} = await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');
+    if(catsError) console.warn('categories error:', catsError);
+    if(cats && cats.length){
+      state.categories=mapCats(cats);
+    } else {
+      try {
+        await createDefaultCategories();
+        const {data:newCats} = await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');
+        state.categories=mapCats(newCats||[]);
+      } catch(e) {
+        console.warn('create categories error:', e);
+        state.categories = [];
+      }
+    }
     
     // Load transactions
-    const {data:txs}=await sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false});
+    const {data:txs, error:txsError} = await sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false});
+    if(txsError) console.warn('transactions error:', txsError);
     state.transactions=(txs||[]).map(mapTx);
     
     // Load goals
-    const {data:goals}=await sb.from('goals').select('*').eq('user_id',userId);
+    const {data:goals, error:goalsError} = await sb.from('goals').select('*').eq('user_id',userId);
+    if(goalsError) console.warn('goals error:', goalsError);
     state.goals=(goals||[]).map(mapGoal);
     
     // Load income sources
-    const {data:sources}=await sb.from('income_sources').select('*').eq('user_id',userId);
+    const {data:sources, error:sourcesError} = await sb.from('income_sources').select('*').eq('user_id',userId);
+    if(sourcesError) console.warn('sources error:', sourcesError);
     state.incomeSources=(sources||[]).map(mapIncomeSource);
     
     setSyncing(false);
+    clearTimeout(timeout);
     document.getElementById('loadingScreen').classList.add('hidden');
     updateHeader();
     renderAll();
-  }catch(e){
-    console.error('Init error:',e);
+  } catch(e) {
+    console.error('Init error:', e);
+    clearTimeout(timeout);
     document.getElementById('loadingScreen').classList.add('hidden');
-    toast('⚠️ Ошибка загрузки данных');
+    toast('⚠️ Ошибка: ' + (e.message || 'неизвестная').slice(0,50));
+    updateHeader();
+    renderAll();
   }
 }
 
@@ -881,3 +1456,5 @@ document.getElementById('fab').onclick=()=>openTxModal();
 // ── START ──
 initApp();
 </script>
+</body>
+</html>
