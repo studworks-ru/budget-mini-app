@@ -577,20 +577,16 @@ function isCurrentMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00'),n=new
 function isActiveMonth(iso){const d=new Date(iso.slice(0,10)+'T12:00:00');return d.getMonth()===activeMonth&&d.getFullYear()===activeYear;}
 function setSyncing(v){document.getElementById('syncIndicator').classList.toggle('syncing',v);}
 
-const CACHE_KEY=`ml_cache_${userId}`;
-function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify({categories:state.categories,transactions:state.transactions,goals:state.goals,incomeSources:state.incomeSources,budget:state.budget,ts:Date.now()}));}catch(e){}}
-function loadCache(){try{const d=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(d){state.categories=d.categories||[];state.transactions=d.transactions||[];state.goals=d.goals||[];state.incomeSources=d.incomeSources||[];state.budget=d.budget||{income:60000};return true;}}catch(e){}return false;}
-
-async function syncFromSupabase(){
-  const[upsertRes,cats,txs,goals,settings,iSrc]=await Promise.all([
-    sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'}).select('*').single(),
+async function initUser(){
+  await sb.from('users').upsert({id:userId,first_name:userFirstName},{onConflict:'id'});
+  const{data:userRow}=await sb.from('users').select('*').eq('id',userId).single();
+  const[cats,txs,goals,settings,iSrc]=await Promise.all([
     sb.from('categories').select('*').eq('user_id',userId).order('sort_order'),
     sb.from('transactions').select('*').eq('user_id',userId).order('date',{ascending:false}),
     sb.from('goals').select('*').eq('user_id',userId),
     sb.from('user_settings').select('*').eq('user_id',userId).single(),
     sb.from('income_sources').select('*').eq('user_id',userId).order('sort_order')
   ]);
-  const userRow=upsertRes.data;
   if(!cats.data||cats.data.length===0){await createDefaultCategories();const c2=await sb.from('categories').select('*').eq('user_id',userId).order('sort_order');state.categories=mapCats(c2.data||[]);}
   else{state.categories=mapCats(cats.data);}
   state.transactions=(txs.data||[]).map(mapTx);
@@ -600,103 +596,17 @@ async function syncFromSupabase(){
   if(settings.data?.theme)applyTheme(settings.data.theme==='dark');
   const av=document.getElementById('userAvatar');
   if(userFirstName&&av)av.textContent=userFirstName[0].toUpperCase();
-  saveCache();
+  checkPaywall(userRow);
+}
+
+async function init(){
+  try{await initUser();}
+  catch(e){console.error(e);showToast('⚠️ Нет соединения');loadLocalFallback();}
+  document.getElementById('loadingScreen').style.display='none';
   render();
-  if(userRow)checkPaywall(userRow);
-}
-function mapCats(data){return data.map(c=>({id:c.id,name:c.name,icon:c.icon,color:c.color,limit:c.limit_amount}));}
-function mapTx(t){return{id:t.id,type:t.type,amount:Number(t.amount),note:t.note,catId:t.category_id,date:t.date,incomeSourceId:t.income_source_id||null};}
-function mapGoal(g){return{id:g.id,name:g.name,icon:g.icon,target:Number(g.target_amount),saved:Number(g.saved_amount),type:g.type||'saving'};}
-function mapIncomeSource(s){return{id:s.id,name:s.name,icon:s.icon||'💰',expected:Number(s.expected_amount||0)};}
-
-async function createDefaultCategories(){
-  const d=[{name:'Еда',icon:'🛒',color:'7DC4A0',limit_amount:12000,sort_order:0},{name:'Транспорт',icon:'🚗',color:'B4A7D6',limit_amount:4000,sort_order:1},{name:'Кафе',icon:'☕',color:'E8C4A0',limit_amount:5000,sort_order:2},{name:'Квартира',icon:'🏠',color:'A7C4D6',limit_amount:25000,sort_order:3},{name:'Здоровье',icon:'💊',color:'E8A0B0',limit_amount:3000,sort_order:4},{name:'Прочее',icon:'📦',color:'C4C0BA',limit_amount:0,sort_order:5}];
-  await sb.from('categories').insert(d.map(x=>({...x,user_id:userId})));
-}
-async function saveSettings(){const theme=document.getElementById('darkToggle').checked?'dark':'light';await sb.from('user_settings').upsert({user_id:userId,budget_income:state.budget.income,theme,updated_at:new Date().toISOString()},{onConflict:'user_id'});}
-
-// ── TILT on stat cards ──
-function toggleFlipCard(){document.getElementById('flipCardWrap').classList.toggle('flipped');}
-function toggleIncomeCard(){document.getElementById('flipIncomeCardWrap').classList.toggle('flipped');}
-
-function renderIncomeSources(txM){
-  const incomeTx=txM.filter(t=>t.type==='income');
-  const el=document.getElementById('incomeSourcesList');
-  const back=document.getElementById('incomeCardBack');
-  if(!state.incomeSources.length){
-    if(el)el.innerHTML='<div class="empty-state"><div class="ei">💰</div><p>Источников нет.<br>Нажми + чтобы добавить</p></div>';
-    if(back)back.innerHTML='<div style="font-size:10px;color:rgba(42,42,42,.4);text-align:center;padding-top:6px">нет источников</div>';
-    return;
-  }
-  if(back){
-    back.innerHTML=state.incomeSources.slice(0,3).map(s=>{
-      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
-      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
-      return '<div class="income-back-item"><span style="font-size:12px">'+s.icon+'</span><span style="flex:1;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+s.name+'</span><span style="font-size:10px;font-weight:800;color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</span></div><div class="income-back-bar"><div class="income-back-bar-fill" style="width:'+pct+'%"></div></div>';
-    }).join('');
-  }
-  if(el){
-    el.innerHTML=state.incomeSources.map(s=>{
-      const received=incomeTx.filter(t=>t.incomeSourceId===s.id).reduce((sum,t)=>sum+t.amount,0);
-      const pct=s.expected?Math.min(100,Math.round(received/s.expected*100)):0;
-      return '<div class="cat-item" onclick="openIncomeSourceModal(''+s.id+'')"><div class="cat-icon" style="background:var(--green-light)">'+s.icon+'</div><div class="cat-info"><div class="cat-name">'+s.name+'</div><div class="cat-bar"><div class="cat-bar-fill" style="width:'+pct+'%;background:var(--green-dark)"></div></div></div><div class="cat-right"><div class="cat-spent" style="color:var(--green-dark)">'+received.toLocaleString('ru-RU')+' ₽</div><div class="cat-limit">'+(s.expected?'план: '+s.expected.toLocaleString('ru-RU')+' ₽':'без плана')+'</div></div><div class="goal-contrib-btn" onclick="event.stopPropagation();openIncomeContribute(''+s.id+'')">+</div></div>';
-    }).join('');
-  }
+  initTilt();
 }
 
-
-function initTilt(){
-  document.querySelectorAll('[data-tilt]').forEach(card=>{
-    const reset=()=>{card.style.transform='';card.style.boxShadow='';};
-    const apply=(x,y)=>{
-      card.style.transform=`perspective(500px) rotateX(${-y*10}deg) rotateY(${x*10}deg) scale(1.03)`;
-      card.style.boxShadow='0 10px 28px rgba(0,0,0,0.13)';
-    };
-    card.addEventListener('touchstart',e=>{const t=e.touches[0],r=card.getBoundingClientRect();apply((t.clientX-r.left)/r.width-.5,(t.clientY-r.top)/r.height-.5);},{passive:true});
-    card.addEventListener('touchmove',e=>{const t=e.touches[0],r=card.getBoundingClientRect();apply((t.clientX-r.left)/r.width-.5,(t.clientY-r.top)/r.height-.5);},{passive:true});
-    card.addEventListener('touchend',reset);
-    card.addEventListener('mousemove',e=>{const r=card.getBoundingClientRect();apply((e.clientX-r.left)/r.width-.5,(e.clientY-r.top)/r.height-.5);});
-    card.addEventListener('mouseleave',reset);
-  });
-}
-
-function hideLoader(){document.getElementById('loadingScreen').classList.add('hidden');}
-
-function init(){
-  // Абсолютный таймаут — лоадер скроется через 6 сек при любом раскладе
-  const absoluteTimeout=setTimeout(()=>{hideLoader();render();},6000);
-
-  try{
-    const hasCached=loadCache();
-    initTilt();
-
-    if(hasCached){
-      clearTimeout(absoluteTimeout);
-      hideLoader();
-      render();
-      setSyncing(true);
-      syncFromSupabase().then(()=>{setSyncing(false);render();}).catch(()=>setSyncing(false));
-    } else {
-      const fallbackTimer=setTimeout(()=>{
-        clearTimeout(absoluteTimeout);
-        loadLocalFallback();hideLoader();render();
-      },4000);
-      syncFromSupabase().then(()=>{
-        clearTimeout(absoluteTimeout);clearTimeout(fallbackTimer);
-        hideLoader();render();
-      }).catch(e=>{
-        clearTimeout(absoluteTimeout);clearTimeout(fallbackTimer);
-        loadLocalFallback();hideLoader();render();
-        showToast('⚠️ Нет соединения');
-      });
-    }
-  }catch(e){
-    clearTimeout(absoluteTimeout);
-    console.error(e);
-    hideLoader();
-    showToast('❌ Ошибка запуска');
-  }
-}
 function loadLocalFallback(){
   try{const r=localStorage.getItem(`budget_v3_${userId}`);if(r){const d=JSON.parse(r);state={...state,...d};}}catch(e){}
   if(!state.categories.length){state.categories=[{id:'c1',name:'Еда',icon:'🛒',color:'7DC4A0',limit:12000},{id:'c2',name:'Транспорт',icon:'🚗',color:'B4A7D6',limit:4000},{id:'c3',name:'Кафе',icon:'☕',color:'E8C4A0',limit:5000},{id:'c4',name:'Квартира',icon:'🏠',color:'A7C4D6',limit:25000},{id:'c5',name:'Здоровье',icon:'💊',color:'E8A0B0',limit:3000},{id:'c6',name:'Прочее',icon:'📦',color:'C4C0BA',limit:0}];}
@@ -849,13 +759,13 @@ async function saveTx(){
   try{
     if(editingTxId){await sb.from('transactions').update({type:currentType,amount,note,category_id:selectedCatId,date}).eq('id',editingTxId);const t=state.transactions.find(x=>x.id===editingTxId);Object.assign(t,{type:currentType,amount,note,catId:selectedCatId,date});}
     else{const newTx={id:uid(),user_id:userId,type:currentType,amount,note,category_id:selectedCatId,date};await sb.from('transactions').insert(newTx);state.transactions.push({id:newTx.id,type:currentType,amount,note,catId:selectedCatId,date});}
-    closeModal('txModal');render();saveCache();showToast('✅ Сохранено');
+    closeModal('txModal');render();showToast('✅ Сохранено');
   }catch(e){showToast('❌ Ошибка сохранения');}
   setSyncing(false);
 }
 async function deleteTx(){
   setSyncing(true);
-  try{await sb.from('transactions').delete().eq('id',editingTxId);state.transactions=state.transactions.filter(t=>t.id!==editingTxId);closeModal('txModal');render();saveCache();showToast('🗑️ Удалено');}
+  try{await sb.from('transactions').delete().eq('id',editingTxId);state.transactions=state.transactions.filter(t=>t.id!==editingTxId);closeModal('txModal');render();showToast('🗑️ Удалено');}
   catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
@@ -880,7 +790,7 @@ async function saveCat(){
   try{
     if(editingCatId){await sb.from('categories').update({name,icon:selectedEmoji,color:selectedColor,limit_amount:limit}).eq('id',editingCatId);const cat=state.categories.find(c=>c.id===editingCatId);Object.assign(cat,{name,icon:selectedEmoji,color:selectedColor,limit});}
     else{const newCat={id:uid(),user_id:userId,name,icon:selectedEmoji,color:selectedColor,limit_amount:limit,sort_order:state.categories.length};await sb.from('categories').insert(newCat);state.categories.push({id:newCat.id,name,icon:selectedEmoji,color:selectedColor,limit});}
-    closeModal('catModal');render();saveCache();showToast('✅ Категория сохранена');
+    closeModal('catModal');render();showToast('✅ Категория сохранена');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
@@ -918,7 +828,7 @@ async function saveIncomeSource(){
   try{
     if(editingIsId){await sb.from('income_sources').update({name,icon:selectedIsEmoji,expected_amount:expected}).eq('id',editingIsId);const s=state.incomeSources.find(x=>x.id===editingIsId);Object.assign(s,{name,icon:selectedIsEmoji,expected});}
     else{const nS={id:uid(),user_id:userId,name,icon:selectedIsEmoji,expected_amount:expected,sort_order:state.incomeSources.length};await sb.from('income_sources').insert(nS);state.incomeSources.push({id:nS.id,name,icon:selectedIsEmoji,expected});}
-    closeModal('incomeSourceModal');render();saveCache();showToast('✅ Источник сохранён');
+    closeModal('incomeSourceModal');render();showToast('✅ Источник сохранён');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
@@ -949,7 +859,7 @@ async function saveIncomeContribute(){
     const nTx={id:uid(),user_id:userId,type:'income',amount,note:s.name,category_id:null,date,income_source_id:contributingIsId};
     await sb.from('transactions').insert(nTx);
     state.transactions.push({id:nTx.id,type:'income',amount,note:s.name,catId:null,date,incomeSourceId:contributingIsId});
-    closeModal('incomeContributeModal');render();saveCache();showToast('✅ '+s.name+' +'+fmt(amount));
+    closeModal('incomeContributeModal');render();showToast('✅ '+s.name+' +'+fmt(amount));
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
@@ -976,7 +886,7 @@ async function saveContribute(){
   try{
     await sb.from('goals').update({saved_amount:newSaved}).eq('id',contributingGoalId);
     g.saved=newSaved;
-    closeModal('contributeModal');render();saveCache();
+    closeModal('contributeModal');render();
     showToast('✅ '+fmt(amount)+' добавлено');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
@@ -988,7 +898,7 @@ async function saveGoal(){
   try{
     if(editingGoalId){await sb.from('goals').update({name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType}).eq('id',editingGoalId);const g=state.goals.find(x=>x.id===editingGoalId);Object.assign(g,{name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
     else{const newGoal={id:uid(),user_id:userId,name,icon:selectedGoalEmoji,target_amount:target,saved_amount:saved,type:currentGoalType};await sb.from('goals').insert(newGoal);state.goals.push({id:newGoal.id,name,icon:selectedGoalEmoji,target,saved,type:currentGoalType});}
-    closeModal('goalModal');render();saveCache();showToast('✅ Цель сохранена');
+    closeModal('goalModal');render();showToast('✅ Цель сохранена');
   }catch(e){showToast('❌ Ошибка');}
   setSyncing(false);
 }
