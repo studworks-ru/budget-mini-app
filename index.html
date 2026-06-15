@@ -47,9 +47,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   background:#0A0E1A;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:9999;gap:20px;
-  transition:opacity .65s ease,visibility .65s;
+  
 }
-.loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.loading-screen.hidden{display:none!important;}
 .loader-pb{
   filter:drop-shadow(0 0 18px #00dd22) drop-shadow(0 0 40px rgba(0,200,40,.6));
   animation:float 2.5s ease-in-out infinite;
@@ -660,15 +660,28 @@ function initTilt(){
 
 function init(){
   const hasCached=loadCache();
-  // Hide loader and show UI immediately
-  document.getElementById('loadingScreen').classList.add('hidden');
-  render();
   initTilt();
-  // Sync Supabase in background — never blocks UI
-  syncFromSupabase().catch(e=>{
-    console.error(e);
-    if(!hasCached){loadLocalFallback();render();showToast('⚠️ Нет соединения');}
-  });
+
+  if(hasCached){
+    // Есть кэш — показываем мгновенно, синк в фоне
+    document.getElementById('loadingScreen').classList.add('hidden');
+    render();
+    setSyncing(true);
+    syncFromSupabase().then(()=>{setSyncing(false);render();}).catch(()=>setSyncing(false));
+  } else {
+    // Нет кэша — ждём Supabase, но не дольше 4 сек
+    const hideLoader=()=>document.getElementById('loadingScreen').classList.add('hidden');
+    const fallbackTimer=setTimeout(()=>{
+      loadLocalFallback();hideLoader();render();
+    },4000);
+    syncFromSupabase().then(()=>{
+      clearTimeout(fallbackTimer);hideLoader();render();
+    }).catch(e=>{
+      clearTimeout(fallbackTimer);
+      loadLocalFallback();hideLoader();render();
+      showToast('⚠️ Нет соединения');
+    });
+  }
 }
 function loadLocalFallback(){
   try{const r=localStorage.getItem(`budget_v3_${userId}`);if(r){const d=JSON.parse(r);state={...state,...d};}}catch(e){}
