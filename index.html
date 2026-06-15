@@ -359,7 +359,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           <div class="flip-card-back" style="background:linear-gradient(140deg,#d8f0e4,#c4e8d4);">
             <div style="font-size:11px;font-weight:700;color:rgba(42,42,42,.55);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
               источники
-              <span style="font-size:20px;cursor:pointer;color:var(--green-dark);font-weight:300;line-height:1;" onclick="event.stopPropagation();openIncomeSourceModal()">+</span>
+              <!-- ВОТ ИСПРАВЛЕНИЕ: pointer-events:auto -->
+              <span style="font-size:20px;cursor:pointer;color:var(--green-dark);font-weight:300;line-height:1;pointer-events:auto;" onclick="event.stopPropagation();openIncomeSourceModal()">+</span>
             </div>
             <div id="incomeCardBack" style="flex:1;overflow:hidden;"></div>
             <div class="flip-hint" onclick="event.stopPropagation();toggleIncomeCard()">↻ доходы</div>
